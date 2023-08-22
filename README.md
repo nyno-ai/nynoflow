@@ -6,8 +6,8 @@
 [![License](https://img.shields.io/pypi/l/nynoflow)][license]
 
 [![Read the documentation at https://nynoflow.readthedocs.io/](https://img.shields.io/readthedocs/nynoflow/latest.svg?label=Read%20the%20Docs)][read the docs]
-[![Tests](https://github.com/Eitan1112/nynoflow/workflows/Tests/badge.svg)][tests]
-[![Codecov](https://codecov.io/gh/Eitan1112/nynoflow/branch/main/graph/badge.svg)][codecov]
+[![Tests](https://github.com/nyno-ai/nynoflow/workflows/Tests/badge.svg)][tests]
+[![Codecov](https://codecov.io/gh/nyno-ai/nynoflow/branch/main/graph/badge.svg)][codecov]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
@@ -16,8 +16,8 @@
 [status]: https://pypi.org/project/nynoflow/
 [python version]: https://pypi.org/project/nynoflow
 [read the docs]: https://nynoflow.readthedocs.io/
-[tests]: https://github.com/Eitan1112/nynoflow/actions?workflow=Tests
-[codecov]: https://app.codecov.io/gh/Eitan1112/nynoflow
+[tests]: https://github.com/nyno-ai/nynoflow/actions?workflow=Tests
+[codecov]: https://app.codecov.io/gh/nyno-ai/nynoflow
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 
@@ -58,6 +58,6 @@ please [file an issue] along with a detailed description.
 
 <!-- github-only -->
 
-[license]: https://github.com/Eitan1112/nynoflow/blob/main/LICENSE
-[contributor guide]: https://github.com/Eitan1112/nynoflow/blob/main/CONTRIBUTING.md
+[license]: https://github.com/nyno-ai/nynoflow/blob/main/LICENSE
+[contributor guide]: https://github.com/nyno-ai/nynoflow/blob/main/CONTRIBUTING.md
 [command-line reference]: https://nynoflow.readthedocs.io/en/latest/usage.html

@@ -5,15 +5,15 @@ description = "NynoFlow"
 authors = ["nyno.ai <eitan@nyno.ai>"]
 license = "GPL-3.0"
 readme = "README.md"
-homepage = "https://github.com/Eitan1112/nynoflow"
-repository = "https://github.com/Eitan1112/nynoflow"
+homepage = "https://github.com/nyno-ai/nynoflow"
+repository = "https://github.com/nyno-ai/nynoflow"
 documentation = "https://nynoflow.readthedocs.io"
 classifiers = [
     "Development Status :: 3 - Alpha",
 ]
 
 [tool.poetry.urls]
-Changelog = "https://github.com/Eitan1112/nynoflow/releases"
+Changelog = "https://github.com/nyno-ai/nynoflow/releases"
 
 [tool.poetry.dependencies]
 python = "^3.9"
