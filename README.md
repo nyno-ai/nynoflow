@@ -39,7 +39,7 @@ $ pip install nynoflow
 
 ## Usage
 
-Please see the [Command-line Reference] for details.
+- TODO
 
 ## Contributing
 
@@ -55,16 +55,6 @@ _NynoFlow_ is free and open source software.
 
 If you encounter any problems,
 please [file an issue] along with a detailed description.
-
-## Credits
-
-This project was generated from [@cjolowicz]'s [Hypermodern Python Cookiecutter] template.
-
-[@cjolowicz]: https://github.com/cjolowicz
-[pypi]: https://pypi.org/
-[hypermodern python cookiecutter]: https://github.com/cjolowicz/cookiecutter-hypermodern-python
-[file an issue]: https://github.com/Eitan1112/nynoflow/issues
-[pip]: https://pip.pypa.io/
 
 <!-- github-only -->
 
