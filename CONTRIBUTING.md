@@ -12,9 +12,9 @@ Here is a list of important resources for contributors:
 - [Code of Conduct]
 
 [gpl 3.0 license]: https://opensource.org/licenses/GPL-3.0
-[source code]: https://github.com/Eitan1112/nynoflow
+[source code]: https://github.com/nyno-ai/nynoflow
 [documentation]: https://nynoflow.readthedocs.io/
-[issue tracker]: https://github.com/Eitan1112/nynoflow/issues
+[issue tracker]: https://github.com/nyno-ai/nynoflow/issues
 
 ## How to report a bug
 
@@ -108,7 +108,7 @@ $ nox --session=pre-commit -- install
 It is recommended to open an issue before starting work on anything.
 This will allow a chance to talk it over with the owners and validate your approach.
 
-[pull request]: https://github.com/Eitan1112/nynoflow/pulls
+[pull request]: https://github.com/nyno-ai/nynoflow/pulls
 
 <!-- github-only -->
 

@@ -19,5 +19,5 @@ reference
 contributing
 Code of Conduct <codeofconduct>
 License <license>
-Changelog <https://github.com/Eitan1112/nynoflow/releases>
+Changelog <https://github.com/nyno-ai/nynoflow/releases>
 ```
