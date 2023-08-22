@@ -1,3 +1,5 @@
+"""This is the sum class."""
+
 from .sum import Sum
 
 

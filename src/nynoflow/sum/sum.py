@@ -1,4 +1,9 @@
+"""This is the Sum class."""
+
+
 class Sum:
+    """This is the Sum class."""
+
     def sum(self, first: int, second: int) -> int:
         """Add two integers.
 
@@ -9,5 +14,4 @@ class Sum:
         Returns:
             The sum of the arguments.
         """
-
         return first + second
