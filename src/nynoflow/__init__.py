@@ -1,3 +1,1 @@
-hello = "hey there"
-
-__all__ = "hello"
+"""The nynoflow package."""
