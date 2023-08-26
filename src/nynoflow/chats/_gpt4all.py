@@ -1,7 +1,7 @@
 from attrs import define
 from attrs import field
 from attrs import frozen
-from gpt4all import GPT4All  # type: ignore
+from gpt4all import GPT4All
 
 from nynoflow.util import logger
 
