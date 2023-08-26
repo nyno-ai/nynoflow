@@ -6,7 +6,7 @@ from nynoflow.chats.chat_types import ChatRequest
 from nynoflow.util import logger
 
 
-def test_chatgpt(mocker: MockerFixture) -> None:
+def test_gpt4all(mocker: MockerFixture) -> None:
     """This is a test for the chatgpt function.
 
     Args:

@@ -1,3 +1,4 @@
+from attrs import asdict
 from attrs import define
 from attrs import field
 from attrs import frozen
@@ -45,6 +46,7 @@ class Gpt4AllProvider:
             model_path=self.model_path,
             allow_download=self.allow_download,
         )
+        logger.debug("Gpt4All configured.")
 
     def completion(self, request: ChatRequest) -> ChatResponse:
         """Get a completion from the GPT4ALL API.
@@ -55,15 +57,21 @@ class Gpt4AllProvider:
         Returns:
             The completion.
         """
-        logger.debug(f"Generating completion for {request.content}")
-        res: str = self._gpt4all_client.generate(request.content)
-        return self._convert_response(res)
+        logger.debug(f"Generating completion for {request}")
+        gpt4all_request = self._convert_request(request)
+        logger.debug(f"Converted request: {gpt4all_request}")
+        gpt4all_response: str = self._gpt4all_client.generate(**asdict(gpt4all_request))
+        logger.debug(f"Generated completion: {gpt4all_response}")
+        response = self._convert_response(gpt4all_response)
+        return response
 
     def _convert_request(self, request: ChatRequest) -> Gpt4AllRequest:
         """Convert a chat request to a GPT4All request."""
+        logger.debug(f"Converting request: {request}")
         x = Gpt4AllRequest(prompt=request.content)
         return x
 
     def _convert_response(self, response: str) -> ChatResponse:
         """Convert a chat response to a generic response."""
+        logger.debug(f"Converting response: {response}")
         return ChatResponse(content=response)

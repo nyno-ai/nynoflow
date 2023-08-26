@@ -15,4 +15,4 @@ class ChatRequest:
 
     role: str = field()
     content: str = field()
-    provider_id: str = field(default=None)
+    provider_id: str | None = field(default=None)

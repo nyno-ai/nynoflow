@@ -142,7 +142,6 @@ def precommit(session: Session) -> None:
 @session(python=python_versions[0])
 def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
-    # session.install("safety")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
@@ -155,7 +154,6 @@ def mypy(session: Session) -> None:
     args = session.posargs or ["src", "tests", "docs/conf.py"]
     session.install(".")
 
-    # session.install("mypy", "pytest")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
@@ -169,7 +167,6 @@ def tests(session: Session) -> None:
     """Run the test suite."""
     session.install(".")
 
-    # session.install("coverage[toml]", "pytest", "pygments", "pytest_mock")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
@@ -184,8 +181,6 @@ def tests(session: Session) -> None:
 def coverage(session: Session) -> None:
     """Produce the coverage report."""
     args = session.posargs or ["report"]
-
-    # session.install("coverage[toml]")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
@@ -199,7 +194,6 @@ def coverage(session: Session) -> None:
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
     session.install(".")
-    # session.install("pytest", "typeguard", "pygments", "pytest_mock")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
@@ -217,7 +211,6 @@ def xdoctest(session: Session) -> None:
             args.append("--colored=1")
 
     session.install(".")
-    # session.install("xdoctest[colors]")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
@@ -232,8 +225,6 @@ def docs_build(session: Session) -> None:
         args.insert(0, "--color")
 
     session.install(".")
-
-    # session.install("sphinx", "sphinx-click", "furo", "myst-parser")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
@@ -249,8 +240,6 @@ def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
     session.install(".")
-
-    # session.install("sphinx", "sphinx-autobuild", "sphinx-click", "furo", "myst-parser")
     requirements = session.poetry.export_requirements()
     session.install("-r", str(requirements))
 
