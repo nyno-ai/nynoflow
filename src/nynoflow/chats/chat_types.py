@@ -1,3 +1,5 @@
+from typing import Union
+
 from attrs import field
 from attrs import frozen
 
@@ -15,4 +17,4 @@ class ChatRequest:
 
     role: str = field()
     content: str = field()
-    provider_id: str | None = field(default=None)
+    provider_id: Union[str, None] = field(default=None)

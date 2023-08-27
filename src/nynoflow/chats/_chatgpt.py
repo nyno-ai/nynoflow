@@ -1,3 +1,5 @@
+from typing import Union
+
 import openai
 from attrs import asdict
 from attrs import define
@@ -32,8 +34,8 @@ class ChatgptResponseMessage:
     """This is the message object for the ChatGPT API."""
 
     role: str = field()
-    content: str | None = field(default=None)
-    function_call: ChatgptResponseFunctionCall | None = field(default=None)
+    content: Union[str, None] = field(default=None)
+    function_call: Union[ChatgptResponseFunctionCall, None] = field(default=None)
 
 
 @frozen
@@ -83,8 +85,8 @@ class ChatgptRequestMessage:
 
     role: str = field()
     content: str = field()
-    name: str | None = field(default=None)
-    function_call: ChatgptRequestFunctionCall | None = field(default=None)
+    name: Union[str, None] = field(default=None)
+    function_call: Union[ChatgptRequestFunctionCall, None] = field(default=None)
 
 
 @frozen
@@ -96,18 +98,18 @@ class ChatgptRequest:
 
     model: str = field()
     messages: list[ChatgptRequestMessage] = field()
-    functions: list[ChatgptRequestFunction] | None = field(default=None)
-    function_call: str | None = field(default=None)
-    temperature: float | None = field(default=None)
-    top_p: float | None = field(default=None)
-    n: int | None = field(default=None)
+    functions: Union[list[ChatgptRequestFunction], None] = field(default=None)
+    function_call: Union[str, None] = field(default=None)
+    temperature: Union[float, None] = field(default=None)
+    top_p: Union[float, None] = field(default=None)
+    n: Union[int, None] = field(default=None)
     stream = False  # Streams not supported in this library yet
-    stop: str | list[str] | None = field(default=None)
-    max_tokens: int | None = field(default=None)
-    presence_penalty: float | None = field(default=None)
-    frequency_penalty: float | None = field(default=None)
-    logit_bias: dict[str, float] | None = field(default=None)
-    user: str | None = field(default=None)
+    stop: Union[str, list[str], None] = field(default=None)
+    max_tokens: Union[int, None] = field(default=None)
+    presence_penalty: Union[float, None] = field(default=None)
+    frequency_penalty: Union[float, None] = field(default=None)
+    logit_bias: Union[dict[str, float], None] = field(default=None)
+    user: Union[str, None] = field(default=None)
 
 
 @define

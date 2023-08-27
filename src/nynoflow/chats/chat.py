@@ -1,4 +1,6 @@
 from typing import Any
+from typing import TypeAlias
+from typing import Union
 
 from attrs import define
 from attrs import field
@@ -11,7 +13,7 @@ from .chat_types import ChatRequest
 from .chat_types import ChatResponse
 
 
-_chat_provider = ChatgptProvider | Gpt4AllProvider
+_chat_provider: TypeAlias = Union[ChatgptProvider, Gpt4AllProvider]
 
 
 def _validate_providers(
@@ -56,7 +58,7 @@ class Chat:
     _tokens_left: int = 1000
     _token_consumption: int = 0
 
-    def _get_provider(self, provider_id: str | None) -> _chat_provider:
+    def _get_provider(self, provider_id: Union[str, None]) -> _chat_provider:
         """Get a provider by its provider_id.
 
         Args:
