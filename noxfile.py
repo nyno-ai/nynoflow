@@ -132,6 +132,7 @@ def precommit(session: Session) -> None:
         "pre-commit",
         "pre-commit-hooks",
         "pyupgrade",
+        "pytest_mock",
     )
     session.run("pre-commit", *args)
     if args and args[0] == "install":
@@ -142,7 +143,8 @@ def precommit(session: Session) -> None:
 def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
     requirements = session.poetry.export_requirements()
-    session.install("safety")
+    session.install("-r", str(requirements))
+
     session.run("safety", "check", "--full-report", f"--file={requirements}")
 
 
@@ -151,7 +153,10 @@ def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
     session.install(".")
-    session.install("mypy", "pytest")
+
+    requirements = session.poetry.export_requirements()
+    session.install("-r", str(requirements))
+
     session.run("mypy", *args)
     if not session.posargs:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
@@ -161,7 +166,10 @@ def mypy(session: Session) -> None:
 def tests(session: Session) -> None:
     """Run the test suite."""
     session.install(".")
-    session.install("coverage[toml]", "pytest", "pygments")
+
+    requirements = session.poetry.export_requirements()
+    session.install("-r", str(requirements))
+
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
     finally:
@@ -173,8 +181,8 @@ def tests(session: Session) -> None:
 def coverage(session: Session) -> None:
     """Produce the coverage report."""
     args = session.posargs or ["report"]
-
-    session.install("coverage[toml]")
+    requirements = session.poetry.export_requirements()
+    session.install("-r", str(requirements))
 
     if not session.posargs and any(Path().glob(".coverage.*")):
         session.run("coverage", "combine")
@@ -186,7 +194,9 @@ def coverage(session: Session) -> None:
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
     session.install(".")
-    session.install("pytest", "typeguard", "pygments")
+    requirements = session.poetry.export_requirements()
+    session.install("-r", str(requirements))
+
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 
@@ -201,7 +211,9 @@ def xdoctest(session: Session) -> None:
             args.append("--colored=1")
 
     session.install(".")
-    session.install("xdoctest[colors]")
+    requirements = session.poetry.export_requirements()
+    session.install("-r", str(requirements))
+
     session.run("python", "-m", "xdoctest", *args)
 
 
@@ -213,7 +225,8 @@ def docs_build(session: Session) -> None:
         args.insert(0, "--color")
 
     session.install(".")
-    session.install("sphinx", "sphinx-click", "furo", "myst-parser")
+    requirements = session.poetry.export_requirements()
+    session.install("-r", str(requirements))
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
@@ -227,7 +240,8 @@ def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
     session.install(".")
-    session.install("sphinx", "sphinx-autobuild", "sphinx-click", "furo", "myst-parser")
+    requirements = session.poetry.export_requirements()
+    session.install("-r", str(requirements))
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
