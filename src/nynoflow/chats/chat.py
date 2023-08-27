@@ -1,5 +1,4 @@
 from typing import Any
-from typing import TypeAlias
 from typing import Union
 
 from attrs import define
@@ -13,7 +12,7 @@ from .chat_types import ChatRequest
 from .chat_types import ChatResponse
 
 
-_chat_provider: TypeAlias = Union[ChatgptProvider, Gpt4AllProvider]
+_chat_provider = Union[ChatgptProvider, Gpt4AllProvider]
 
 
 def _validate_providers(
