@@ -1,15 +1,11 @@
-from typing import Any
-from typing import Union
+from typing import Any, Union
 
-from attrs import define
-from attrs import field
+from attrs import define, field
 
 from nynoflow.util import logger
 
 from ._chatgpt import ChatgptProvider
 from ._gpt4all import Gpt4AllProvider
-from .chat_types import ChatRequest
-from .chat_types import ChatResponse
 
 
 _chat_provider = Union[ChatgptProvider, Gpt4AllProvider]
@@ -48,7 +44,7 @@ class Chat:
     """Abstraction class above the different chat providers.
 
     Args:
-        providers (list[ChatgptProvider | Gpt4AllProvider]): The chat providers to use.
+        providers (list[_chat_provider]): The chat providers to use.
     """
 
     providers: list[_chat_provider] = field(validator=_validate_providers)
@@ -56,6 +52,21 @@ class Chat:
     _message_history: list[str] = []
     _tokens_left: int = 1000
     _token_consumption: int = 0
+
+    def completion(self, prompt: str, provider_id: Union[str, None] = None) -> str:
+        """Chat Completion method for abstracting away the request/resopnse of each provider.
+
+        Args:
+            prompt (str): The message to use for the completion.
+            provider_id (str, optional): The provider_id to use. Defaults to None (only applicable if there is one provider).
+
+        Returns:
+            ChatResponse object with the result.
+        """
+        logger.debug(f"Completion invoked. Prompt: {prompt}")
+        provider = self._get_provider(provider_id)
+        completion = provider.completion(prompt)
+        return completion
 
     def _get_provider(self, provider_id: Union[str, None]) -> _chat_provider:
         """Get a provider by its provider_id.
@@ -84,17 +95,3 @@ class Chat:
         # No need to check for multiple providers with the same provider_id as this is already done in _validate_providers
         else:
             return providers_found[0]
-
-    def completion(self, message: ChatRequest) -> ChatResponse:
-        """Chat Completion method for abstracting away the request/resopnse of each provider.
-
-        Args:
-            message (ChatRequest): The message to use for the completion.
-
-        Returns:
-            ChatResponse object with the result.
-        """
-        logger.debug(f"Completion invoked. Message: {message}")
-        provider = self._get_provider(message.provider_id)
-        res: ChatResponse = provider.completion(message)
-        return res

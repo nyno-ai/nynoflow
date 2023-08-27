@@ -1,15 +1,9 @@
 from typing import Union
 
 import openai
-from attrs import asdict
-from attrs import define
-from attrs import field
-from attrs import frozen
+from attrs import asdict, define, field, frozen
 
 from nynoflow.util import logger
-
-from .chat_types import ChatRequest
-from .chat_types import ChatResponse
 
 
 @frozen
@@ -96,8 +90,17 @@ class ChatgptRequest:
     Parameters are taken from herer: https://platform.openai.com/docs/api-reference/chat/create?lang=python
     """
 
-    model: str = field()
     messages: list[ChatgptRequestMessage] = field()
+
+
+@define
+class ChatgptProvider:
+    """LLM Engine for OpenAI ChatGPT."""
+
+    organization: str = field()
+    api_key: str = field()
+    model: str = field()
+
     functions: Union[list[ChatgptRequestFunction], None] = field(default=None)
     function_call: Union[str, None] = field(default=None)
     temperature: Union[float, None] = field(default=None)
@@ -111,15 +114,7 @@ class ChatgptRequest:
     logit_bias: Union[dict[str, float], None] = field(default=None)
     user: Union[str, None] = field(default=None)
 
-
-@define
-class ChatgptProvider:
-    """LLM Engine for OpenAI ChatGPT."""
-
-    organization: str = field()
-    api_key: str = field()
-    model: str = field()
-    provider_id: str = field(default="gpt4all")
+    provider_id: str = field(default="chatgpt")
 
     def __attrs_post_init__(self) -> None:
         """Configure the openai package with auth and configurations."""
@@ -127,31 +122,18 @@ class ChatgptProvider:
         openai.api_key = self.api_key
         openai.organization = self.organization
 
-    def completion(self, request: ChatRequest) -> ChatResponse:
+    def completion(self, prompt: str) -> str:
         """Get a completion from the OpenAI API.
 
         Args:
-            request: The prompt to use for the completion.
+            prompt (str): The prompt to use for the completion.
 
         Returns:
             The completion.
         """
-        req = self._convert_request(request)
-        res: ChatgptResponse = openai.ChatCompletion.create(**asdict(req))
-        return self._convert_response(res)
-
-    def _convert_request(self, request: ChatRequest) -> ChatgptRequest:
-        """Convert the generic ChatRequest to ChatgptRequest to be used by openai api."""
-        return ChatgptRequest(
-            model=self.model,
-            messages=[
-                ChatgptRequestMessage(
-                    role=request.role,
-                    content=request.content,
-                )
-            ],
+        req: ChatgptRequest = ChatgptRequest(
+            messages=[ChatgptRequestMessage(role="user", content=prompt)]
         )
-
-    def _convert_response(self, response: ChatgptResponse) -> ChatResponse:
-        """Convert the generic ChatResponse to ChatgptResponse to be used by openai api."""
-        return ChatResponse(content=response.choices[0].message.content or "")
+        res: ChatgptResponse = openai.ChatCompletion.create(**asdict(req))
+        content: str = res.choices[0].message.content or ""  # TODO fix this hack
+        return content
