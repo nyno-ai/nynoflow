@@ -20,6 +20,10 @@ python = "^3.9"
 attrs = "^23.1.0"
 openai = "^0.27.8"
 gpt4all = "^1.0.8"
+tiktoken = "^0.4.0"
+sentencepiece = "^0.1.99"
+tokenizers = "^0.13.3"
+transformers = "^4.32.1"
 
 [tool.poetry.group.dev.dependencies]
 Pygments = "^2.16.1"
@@ -48,6 +52,7 @@ myst-parser = "^2.0.0"
 nox-poetry = "^1.0.3"
 typeguard = "^4.1.2"
 pytest-mock = "^3.11.1"
+python-dotenv = "^1.0.0"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]

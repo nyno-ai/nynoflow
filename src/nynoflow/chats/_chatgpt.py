@@ -1,96 +1,81 @@
-from typing import Union
+from typing import List, TypedDict, Union
 
 import openai
-from attrs import asdict, define, field, frozen
+from attrs import define, field
 
 from nynoflow.util import logger
 
 
-@frozen
-class ChatgptResponseUsage:
+class ChatgptResponseUsage(TypedDict):
     """This is the usage object for the ChatGPT API."""
 
-    prompt_tokens: int = field()
-    completion_tokens: int = field()
-    total_tokens: int = field()
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
 
 
-@frozen
-class ChatgptResponseFunctionCall:
+class ChatgptResponseFunctionCall(TypedDict):
     """This is the function call object for the ChatGPT API."""
 
-    name: str = field()
-    arguments: str = field()
+    name: str
+    arguments: str
 
 
-@frozen
-class ChatgptResponseMessage:
+class ChatgptResponseMessage(TypedDict, total=False):
     """This is the message object for the ChatGPT API."""
 
-    role: str = field()
-    content: Union[str, None] = field(default=None)
-    function_call: Union[ChatgptResponseFunctionCall, None] = field(default=None)
+    role: str
+    content: Union[str, None]
+    function_call: Union[ChatgptResponseFunctionCall, None]
 
 
-@frozen
-class ChatgptResponseChoice:
+class ChatgptResponseChoice(TypedDict):
     """This is the choice object for the ChatGPT API."""
 
-    index: int = field()
-    message: ChatgptResponseMessage = field()
-    finish_reason: str = field()
+    index: int
+    message: ChatgptResponseMessage
+    finish_reason: str
 
 
-@frozen
-class ChatgptResponse:
-    """This is the object returned by the OpenAI API for a chat completion.
+class ChatgptResponse(TypedDict):
+    """This is the object returned by the OpenAI API for a chat completion."""
 
-    Parameters are taken from here: https://platform.openai.com/docs/api-reference/chat/object
-    """
-
-    id: str = field()
-    object: str = field()
-    created: int = field()
-    model: str = field()
-    choices: list[ChatgptResponseChoice] = field()
-    usage: ChatgptResponseUsage = field()
+    id: str
+    object: str
+    created: int
+    model: str
+    choices: List[ChatgptResponseChoice]
+    usage: ChatgptResponseUsage
 
 
-@frozen
-class ChatgptRequestFunction:
+class ChatgptRequestFunction(TypedDict):
     """This is the function object for the ChatGPT API."""
 
-    name: str = field()
-    description: str = field()
-    parameters: object = field()
+    name: str
+    description: str
+    parameters: object
 
 
-@frozen
-class ChatgptRequestFunctionCall:
+class ChatgptRequestFunctionCall(TypedDict):
     """This is the function call object for the ChatGPT API."""
 
-    name: str = field()
-    arguments: str = field()
+    name: str
+    arguments: str
 
 
-@frozen
-class ChatgptRequestMessage:
+class ChatgptRequestMessage(TypedDict, total=False):
     """This is the message object for the ChatGPT API."""
 
-    role: str = field()
-    content: str = field()
-    name: Union[str, None] = field(default=None)
-    function_call: Union[ChatgptRequestFunctionCall, None] = field(default=None)
+    role: str
+    content: str
+    name: Union[str, None]
+    function_call: Union[ChatgptRequestFunctionCall, None]
 
 
-@frozen
-class ChatgptRequest:
-    """This is the request object for chatgpt completions.
+class ChatgptRequest(TypedDict):
+    """This is the request object for chatgpt completions."""
 
-    Parameters are taken from herer: https://platform.openai.com/docs/api-reference/chat/create?lang=python
-    """
-
-    messages: list[ChatgptRequestMessage] = field()
+    messages: List[ChatgptRequestMessage]
 
 
 @define
@@ -115,12 +100,15 @@ class ChatgptProvider:
     user: Union[str, None] = field(default=None)
 
     provider_id: str = field(default="chatgpt")
+    openai_chat_completion_client: openai.ChatCompletion = field(init=False)
 
     def __attrs_post_init__(self) -> None:
         """Configure the openai package with auth and configurations."""
         logger.debug("Configuring ChatGPT Provider")
-        openai.api_key = self.api_key
-        openai.organization = self.organization
+        self.openai_chat_completion_client = openai.ChatCompletion(
+            api_key=self.api_key,
+            organization=self.organization,
+        )
 
     def completion(self, prompt: str) -> str:
         """Get a completion from the OpenAI API.
@@ -134,6 +122,8 @@ class ChatgptProvider:
         req: ChatgptRequest = ChatgptRequest(
             messages=[ChatgptRequestMessage(role="user", content=prompt)]
         )
-        res: ChatgptResponse = openai.ChatCompletion.create(**asdict(req))
-        content: str = res.choices[0].message.content or ""  # TODO fix this hack
+        res: ChatgptResponse = self.openai_chat_completion_client.create(**req)
+        content: str = (
+            res["choices"][0]["message"]["content"] or ""
+        )  # TODO fix this hack
         return content
