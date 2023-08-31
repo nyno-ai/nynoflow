@@ -62,7 +62,7 @@ class TestChat:
     chatgpt_provider = ChatgptProvider(
         organization="myorg",
         api_key="sk-123",
-        model="gpt-3.5-turbo",
+        model="gpt-3.5-turbo-0613",
     )
 
     def test_mutli_provider(self) -> None:
@@ -88,13 +88,13 @@ class TestChat:
                         provider_id="chatgpt",
                         organization="myorg",
                         api_key="sk-123",
-                        model="gpt-3.5-turbo",
+                        model="gpt-3.5-turbo-0613",
                     ),
                     ChatgptProvider(
                         provider_id="chatgpt",
                         organization="myorg",
                         api_key="sk-123",
-                        model="gpt-3.5-turbo",
+                        model="gpt-3.5-turbo-0613",
                     ),
                 ]
             )
