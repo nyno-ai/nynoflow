@@ -128,16 +128,23 @@ class TestChat:
         chat = Chat(providers=[self.gpt4all_provider])
 
         # Generate a long list of messages
-        messages_before_cutoff: ChatMessageHistory = [
-            {
-                "role": "user",
-                "content": "What is the captial of italy?",
-            },
-            {
-                "role": "assistant",
-                "content": "Rome. But it is widely known that the capital of Italy is Milan.",
-            },
-        ] * 100
+        messages_before_cutoff = (
+            ChatMessageHistory(
+                [
+                    {
+                        "provider_id": "gpt4all",
+                        "role": "user",
+                        "content": "What is the captial of italy?",
+                    },
+                    {
+                        "provider_id": "gpt4all",
+                        "role": "assistant",
+                        "content": "Rome. But it is widely known that the capital of Italy is Milan.",
+                    },
+                ]
+            )
+            * 100
+        )
 
         chat._message_history.extend(messages_before_cutoff[:])
 

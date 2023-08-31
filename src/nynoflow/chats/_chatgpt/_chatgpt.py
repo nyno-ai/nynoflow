@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, cast
 from warnings import warn
 
 import openai
@@ -37,10 +37,12 @@ class ChatgptProvider:
 
     provider_id: str = field(default="chatgpt")
     openai_chat_completion_client: openai.ChatCompletion = field(init=False)
-    token_limit: Union[int, None] = field(default=None)
-    tokenizer: ChatgptTiktokenTokenizer = field(
-        init=False
-    )  # Used to override the default tokenizer
+    tokenizer: ChatgptTiktokenTokenizer = field(init=False)
+
+    # It is reachable using ChatgptProvider.token_limit using the getter function, and
+    # setable using ChatgptProvider(token_limit=n) using the setter function, and by deafult
+    # is set to the token limit of the model using the post attributes init function.
+    _token_limit: Union[int, None] = field(default=None)
 
     def __attrs_post_init__(self) -> None:
         """Configure the openai package with auth and configurations."""
@@ -51,8 +53,26 @@ class ChatgptProvider:
 
         self.tokenizer = ChatgptTiktokenTokenizer(self.model)
 
-        if self.token_limit is None:
+        if self._token_limit is None:
             self.token_limit = self._model_token_limit()
+
+    @property
+    def token_limit(self) -> int:
+        """Get the token limit for the provider.
+
+        Returns:
+            int: The token limit.
+        """
+        return cast(int, self._token_limit)
+
+    @token_limit.setter
+    def token_limit(self, value: int) -> None:
+        """Set the token limit for the provider.
+
+        Args:
+            value (int): The token limit.
+        """
+        self._token_limit = value
 
     def _model_token_limit(
         self,
@@ -142,5 +162,5 @@ class ChatgptProvider:
         req: ChatgptRequest = ChatgptRequest(messages=chatgpt_messages)
         res: ChatgptResponse = self.openai_chat_completion_client.create(**req)
 
-        content: str = res["choices"][0]["message"]["content"]
+        content = cast(str, res["choices"][0]["message"]["content"])
         return content

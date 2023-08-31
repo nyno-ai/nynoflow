@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Union
 
 from attrs import define, field
@@ -80,16 +81,16 @@ class Chat:
         )
         return completion
 
-    def _cutoff_message_history(self, provider) -> ChatMessageHistory:
+    def _cutoff_message_history(self, provider: _chat_provider) -> ChatMessageHistory:
         """Cutoff message history starting from the last message to make sure we have enough tokens for the answer.
 
         Args:
-            provider: The provider to use.
+            provider (_chat_provider): The provider to use.
 
         Returns:
             ChatMessageHistory: The cutoff message history.
         """
-        message_history = self._message_history[:]
+        message_history = deepcopy(self._message_history)
         while (
             provider.token_limit - provider._num_tokens(message_history) < 256
         ):  # TODO change from 256
