@@ -20,7 +20,9 @@ def config() -> ConfigTests:
     """
     load_dotenv(".env.test")
 
-    config: ConfigTests = {
-        "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
-    }
+    config = ConfigTests(
+        {
+            "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
+        }
+    )
     return config
