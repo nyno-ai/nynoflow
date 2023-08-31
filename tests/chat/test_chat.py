@@ -1,10 +1,13 @@
 import pytest
+from attrs import define
 from pytest_mock import MockerFixture
+from transformers import AutoTokenizer
 
 from nynoflow.chats import Chat
-from nynoflow.chats._chatgpt import ChatgptProvider, ChatgptResponse
-from nynoflow.chats._gpt4all import Gpt4AllProvider
-from nynoflow.util import logger
+from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
+from nynoflow.chats._chatgpt._chatgpt_objects import ChatgptResponse
+from nynoflow.chats._gpt4all._gpt4all import Gpt4AllProvider
+from nynoflow.utils.tokenizers.base_tokenizer import BaseTokenizer
 
 
 chatgpt_response: ChatgptResponse = {
@@ -32,8 +35,27 @@ def mock_openai_chatgpt(mocker: MockerFixture) -> None:
     mocker.patch("openai.ChatCompletion.create", return_value=chatgpt_response)
 
 
+@define
+class Gpt4AllTokenizerOrcaMini3B(BaseTokenizer):
+    """Gpt4All tokenizer for the orca mini model."""
+
+    gpt4all_tokenizer = AutoTokenizer.from_pretrained("psmathur/orca_mini_3b")
+
+    def encode(self, text: str) -> list[int]:
+        """Encode a string."""
+        res: list[int] = self.gpt4all_tokenizer.encode(text)
+        return res
+
+    def decode(self, tokens: list[int]) -> str:
+        """Decode a list of tokens."""
+        res: str = self.gpt4all_tokenizer.decode(tokens)
+        return res
+
+
 class TestChat:
     """Test the Chat class."""
+
+    gpt4all_tokenizer: Gpt4AllTokenizerOrcaMini3B = Gpt4AllTokenizerOrcaMini3B()
 
     def test_mutli_provider(self) -> None:
         """This is a test for the chatgpt function."""
@@ -45,21 +67,16 @@ class TestChat:
                     model="gpt-3.5-turbo",
                 ),
                 Gpt4AllProvider(
-                    model_name="orca-mini-3b.ggmlv3.q4_0.bin", allow_download=True
+                    model_name="orca-mini-3b.ggmlv3.q4_0.bin",
+                    allow_download=True,
+                    tokenizer=self.gpt4all_tokenizer,
                 ),
             ]
         )
 
-        res1 = chat.completion(
-            prompt="What is the captial of france?", provider_id="chatgpt"
-        )
-
-        res2 = chat.completion(
-            prompt="What is the captial of italy?", provider_id="gpt4all"
-        )
-
-        logger.debug(res1)
-        logger.debug(res2)
+        # Make sure no exception is raised when calling the completion function
+        chat.completion(prompt="What is the captial of france?", provider_id="chatgpt")
+        chat.completion(prompt="What is the captial of italy?", provider_id="gpt4all")
 
     def test_zero_providers(self) -> None:
         """Expect to fail without any providers."""
@@ -114,7 +131,9 @@ class TestChat:
                         model="gpt-3.5-turbo",
                     ),
                     Gpt4AllProvider(
-                        model_name="orca-mini-3b.ggmlv3.q4_0.bin", allow_download=True
+                        model_name="orca-mini-3b.ggmlv3.q4_0.bin",
+                        allow_download=True,
+                        tokenizer=self.gpt4all_tokenizer,
                     ),
                 ]
             ).completion(

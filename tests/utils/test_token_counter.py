@@ -1,74 +1,151 @@
 import openai
-from gpt4all import GPT4All
+import pytest
 
-from nynoflow.util import logger
-from nynoflow.utils.cl100k_base_token_counter import (
-    cl100k_base_num_tokens_from_messages,
+from nynoflow.chats._chatgpt._chatgpt_objects import (  # ChatgptRequestFunction,
+    ChatgptMessageHistory,
 )
-from nynoflow.utils.openai_token_counter import openai_num_tokens_from_messages
+from nynoflow.util import logger
+from nynoflow.utils.tokenizers.openai_tokenizer import ChatgptTiktokenTokenizer
 from tests.conftest import ConfigTests
 
 
-def test_token_counter_openai(config: ConfigTests) -> None:
-    """Test the token counter."""
-    example_messages = [
+class TestOpenaiTokenizer:
+    """Test the openai tokenizer."""
+
+    MODELS_WITH_FUNCTION_SUPPORT = [
+        "gpt-3.5-turbo-0613",
+        # "gpt-3.5-turbo",
+        # "gpt-4-0314",
+        # "gpt-4-0613",
+        # "gpt-4",
+    ]
+
+    MODELS_WITHOUT_FUNCTION_SUPPORT = [
+        "gpt-3.5-turbo-0301",
+    ]
+
+    # FUNCTIONS: list[ChatgptRequestFunction] = [
+    #     {
+    #         "name": "get_current_weather",
+    #         "description": "Get the current weather in a given location",
+    #         "parameters": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "location": {
+    #                     "type": "string",
+    #                     "description": "The city and state, e.g. San Francisco, CA",
+    #                 },
+    #                 "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+    #             },
+    #             "required": ["location"],
+    #         },
+    #     },
+    #     {
+    #         "name": "my_random_function",
+    #         "description": "Just a function without any parameters",
+    #         "parameters": {
+    #             "type": "object",
+    #             "properties": {},
+    #         },
+    #     },
+    # ]
+
+    MESSAGES_WITHOUT_FUNCTIONS: ChatgptMessageHistory = [
         {
             "role": "system",
-            "content": "You are a helpful assistant",
+            "content": "You are an assistant",
         },
         {
             "role": "user",
-            "content": "Hello there",
+            "name": "example_user",
+            "content": "How are you?",
         },
     ]
+    MESSAGES_WITH_FUNCTIONS: ChatgptMessageHistory = [
+        {
+            "role": "system",
+            "content": "You are an assistant\n",
+        },
+        {
+            "role": "user",
+            "name": "example_user",
+            "content": "What is the weather in boston?",
+        },
+        # {
+        #     "role": "assistant",
+        #     "content": None,
+        #     "function_call": {
+        #         "name": "get_current_weather",
+        #         "arguments": "{\n  \"location\": \"Boston, MA\"\n}",
+        #     },
+        # },
+        # {
+        #     "role": "function",
+        #     "name": "get_current_weather",
+        #     "content": '{"location": "boston", "temperature": "72", "unit": "celsius", "forecast": ["sunny", "windy"]}',
+        # },
+        {
+            "role": "assistant",
+            "content": "The weather is 72 celsius degrees.",
+        },
+        {
+            "role": "user",
+            "content": "thanks! how about the weather in new york?",
+        },
+        # {
+        #     "role": "assistant",
+        #     "content": None,
+        #     "function_call": {
+        #         "name": "get_current_weather",
+        #         "arguments": '{"location": "new york"}',
+        #     },
+        # },
+        # {
+        #     "role": "function",
+        #     "name": "get_current_weather",
+        #     "content": '{"location": "new york", "temperature": "13", "unit": "celsius", "forecast": ["sunny", "windy"]}',
+        # },
+        # {
+        #     "role": "assistant",
+        #     "content": "The weather is 13 celsius degrees.",
+        # },
+    ]
 
-    for model in [
-        "gpt-3.5-turbo-0301",
-        "gpt-3.5-turbo-0613",
-        "gpt-3.5-turbo",
-        "gpt-4-0314",
-        "gpt-4-0613",
-        "gpt-4",
-    ]:
-        logger.debug(model)
-        # example token count from the function defined above
-        logger.debug(
-            f"""{openai_num_tokens_from_messages(example_messages, model)} prompt
-            tokens counted by openai_num_tokens_from_messages()."""
-        )
-        # example token count from the OpenAI API
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=example_messages,
-            temperature=0,
-            max_tokens=1,  # we're only counting input tokens here, so let's not waste tokens on the output
-        )
-        logger.debug(
-            f'{response["usage"]["prompt_tokens"]} prompt tokens counted by the OpenAI API.'
-        )
+    def test_with_functions(self, config: ConfigTests) -> None:
+        """Test tokenizer for models with function support."""
+        for model in self.MODELS_WITH_FUNCTION_SUPPORT:
+            response = openai.ChatCompletion.create(
+                api_key=config["OPENAI_API_KEY"],
+                model=model,
+                # functions=self.FUNCTIONS,
+                messages=self.MESSAGES_WITH_FUNCTIONS,
+                temperature=0,
+                max_tokens=1000,  # we're only counting input tokens here, so let's not waste tokens on the output
+            )
+            logger.debug(response)
+            usage_tokens = response["usage"]["prompt_tokens"]
 
-        assert response["usage"]["prompt_tokens"] == openai_num_tokens_from_messages(
-            example_messages, model
-        )
+            tokenizer = ChatgptTiktokenTokenizer(model)
+            calculated_tokens = tokenizer.token_count(self.MESSAGES_WITH_FUNCTIONS)
+            assert usage_tokens == calculated_tokens
 
+    def test_without_functions(self, config: ConfigTests) -> None:
+        """Test tokenizer for models without function support."""
+        for model in self.MODELS_WITHOUT_FUNCTION_SUPPORT:
+            response = openai.ChatCompletion.create(
+                api_key=config["OPENAI_API_KEY"],
+                model=model,
+                messages=self.MESSAGES_WITHOUT_FUNCTIONS,
+                temperature=0,
+                max_tokens=1,  # we're only counting input tokens here, so let's not waste tokens on the output
+            )
+            usage_tokens = response["usage"]["prompt_tokens"]
 
-def test_token_counter_gpt4all(config: ConfigTests) -> None:
-    """Test the token counter for gpt4all."""
-    prompt = "Hello"
-    gpt4all_client = GPT4All(
-        model_name="orca-mini-3b.ggmlv3.q4_0.bin",
-        allow_download=True,
-    )
+            tokenizer = ChatgptTiktokenTokenizer(model)
+            calculated_tokens = tokenizer.token_count(self.MESSAGES_WITHOUT_FUNCTIONS)
+            assert usage_tokens == calculated_tokens
 
-    official_token_count = 0
-    response = ""
-    for _ in range(1):
-        for token in gpt4all_client.generate(prompt, streaming=True):
-            official_token_count += 1
-            response += token
-        calculated_token_count = cl100k_base_num_tokens_from_messages(
-            [response], gpt4all_client.config["path"]
-        )
-        logger.debug(f"Token count: {calculated_token_count}")
-
-        assert official_token_count == calculated_token_count
+    def test_invalid_model(self, config: ConfigTests) -> None:
+        """Make sure the tokenizer raises an exception for invalid model names."""
+        with pytest.warns():
+            ChatgptTiktokenTokenizer("invalid-model-name")

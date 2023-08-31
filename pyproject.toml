@@ -53,6 +53,9 @@ nox-poetry = "^1.0.3"
 typeguard = "^4.1.2"
 pytest-mock = "^3.11.1"
 python-dotenv = "^1.0.0"
+sentencepiece = "^0.1.99"
+transformers = "^4.32.1"
+protobuf = "^4.24.2"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]

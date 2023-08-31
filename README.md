@@ -21,6 +21,8 @@
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 
+Nynoflow was built out of frustration with current tooling to build LLM applications. Some focus too much on UI building, which is limited at best. Some over-abstract on certain areas to the point that you can't understand what's the prompt being sent to the LLM. So here at nyno-ai, we set to build the best framework and tooling to build LLM applications for developers.
+
 ## Features
 
 - TODO
