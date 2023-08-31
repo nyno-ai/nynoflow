@@ -15,17 +15,6 @@ class BaseTokenizer(ABC):
             list[int]: The coded text.
         """
 
-    @abstractmethod
-    def decode(self, tokens: list[int]) -> str:
-        """Decode a list of tokens.
-
-        Args:
-            tokens (list[int]): The tokens to decode.
-
-        Returns:
-            str: The decoded tokens.
-        """
-
     def token_count(self, text: str) -> int:
         """Get the number of tokens in a string.
 

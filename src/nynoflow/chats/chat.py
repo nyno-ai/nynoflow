@@ -4,7 +4,6 @@ from attrs import define, field
 
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
 from nynoflow.chats._gpt4all._gpt4all import Gpt4AllProvider
-from nynoflow.util import logger
 
 from .chat_objects import ChatMessageHistory
 
@@ -50,7 +49,7 @@ class Chat:
 
     providers: list[_chat_provider] = field(validator=_validate_providers)
 
-    _message_history: ChatMessageHistory = []
+    _message_history = ChatMessageHistory()
 
     def completion(self, prompt: str, provider_id: Union[str, None] = None) -> str:
         """Chat Completion method for abstracting away the request/resopnse of each provider.
@@ -62,22 +61,41 @@ class Chat:
         Returns:
             str: The completion of the prompt.
         """
-        logger.debug(f"Completion invoked. Prompt: {prompt}")
         provider = self._get_provider(provider_id)
-        completion = provider.completion(prompt)
-        self._message_history += [
-            {
-                "provider_id": provider.provider_id,
-                "content": prompt,
-                "role": "user",
-            },
-            {
-                "provider_id": provider.provider_id,
-                "content": completion,
-                "role": "assistant",
-            },
-        ]
+        message_history_after_cutoff = self._cutoff_message_history(provider)
+        completion = provider.completion(message_history_after_cutoff)
+        self._message_history.extend(
+            [
+                {
+                    "provider_id": provider.provider_id,
+                    "content": prompt,
+                    "role": "user",
+                },
+                {
+                    "provider_id": provider.provider_id,
+                    "content": completion,
+                    "role": "assistant",
+                },
+            ]
+        )
         return completion
+
+    def _cutoff_message_history(self, provider) -> ChatMessageHistory:
+        """Cutoff message history starting from the last message to make sure we have enough tokens for the answer.
+
+        Args:
+            provider: The provider to use.
+
+        Returns:
+            ChatMessageHistory: The cutoff message history.
+        """
+        message_history = self._message_history[:]
+        while (
+            provider.token_limit - provider._num_tokens(message_history) < 256
+        ):  # TODO change from 256
+            message_history.pop(0)
+
+        return message_history
 
     def _get_provider(self, provider_id: Union[str, None]) -> _chat_provider:
         """Get a provider by its provider_id.
@@ -107,29 +125,10 @@ class Chat:
         else:
             return providers_found[0]
 
-    def _token_consumption(self, provider_id: str) -> int:
-        """Get the token consumption of the chat for a specific provider.
-
-        We need to filter by provider because each provider has a different tokenizer, based on the model.
-
-        Args:
-            provider_id (str): The provider_id to use.
-
-        Returns:
-            int: The token consumption of the chat.
-        """
-        provider = self._get_provider(provider_id)
-        return provider._num_tokens(self._message_history)
-
     def __str__(self) -> str:
         """Get the string representation of the chat.
 
         Returns:
             str: The string representation of the chat. Each message is on a new line with the role and the content printed.
         """
-        return "\n".join(
-            [
-                f"{msg['role']} ({msg['provider_id']}): {msg['content']}"
-                for msg in self._message_history
-            ]
-        )
+        return str(self._message_history)
