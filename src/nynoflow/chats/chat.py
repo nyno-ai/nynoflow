@@ -52,18 +52,23 @@ class Chat:
 
     _message_history = ChatMessageHistory()
 
-    def completion(self, prompt: str, provider_id: Union[str, None] = None) -> str:
+    def completion(
+        self, prompt: str, provider_id: Union[str, None] = None, token_offset: int = 16
+    ) -> str:
         """Chat Completion method for abstracting away the request/resopnse of each provider.
 
         Args:
             prompt (str): The message to use for the completion.
             provider_id (str, optional): The provider_id to use. Defaults to None (only applicable if there is one provider).
+            token_offset (int): The minimum number of tokens to offset for the response. Defaults to 16.
 
         Returns:
             str: The completion of the prompt.
         """
         provider = self._get_provider(provider_id)
-        message_history_after_cutoff = self._cutoff_message_history(provider)
+        message_history_after_cutoff = self._cutoff_message_history(
+            provider, token_offset
+        )
         completion = provider.completion(message_history_after_cutoff)
         self._message_history.extend(
             [
@@ -81,19 +86,22 @@ class Chat:
         )
         return completion
 
-    def _cutoff_message_history(self, provider: _chat_provider) -> ChatMessageHistory:
+    def _cutoff_message_history(
+        self, provider: _chat_provider, token_offset: int
+    ) -> ChatMessageHistory:
         """Cutoff message history starting from the last message to make sure we have enough tokens for the answer.
 
         Args:
             provider (_chat_provider): The provider to use.
+            token_offset (int): The minimum number of tokens to offset for the response.
 
         Returns:
             ChatMessageHistory: The cutoff message history.
         """
         message_history = deepcopy(self._message_history)
         while (
-            provider.token_limit - provider._num_tokens(message_history) < 256
-        ):  # TODO change from 256
+            provider.token_limit - provider._num_tokens(message_history) < token_offset
+        ):
             message_history.pop(0)
 
         return message_history

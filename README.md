@@ -43,6 +43,16 @@ $ pip install nynoflow
 
 - TODO
 
+## Defaults
+
+Here are all the default configuations you should make sure to review when creating an app with nynoflow:
+
+| Config                       | Description                                                                                                                                                                                                                                                                                             | Default |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Chat.completion.token_offset | This is used for the historical message cutoff (removing old messages when the token limit is exceeded). This number is the number of tokens you may require for the answer. This is deliberetly different then the token_limit because you may get more token space since messages are cut as a whole. | 16      |
+|                              |                                                                                                                                                                                                                                                                                                         |         |
+|                              |                                                                                                                                                                                                                                                                                                         |         |
+
 ## Contributing
 
 Contributions are very welcome.

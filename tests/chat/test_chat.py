@@ -149,7 +149,7 @@ class TestChat:
         chat._message_history.extend(messages_before_cutoff[:])
 
         # Basically assert that no exception is raised due to the message cutoff
-        chat.completion("What is the captical of france?")
+        chat.completion("What is the captical of france?", token_offset=16)
 
     def test_chatgpt_provider_custom_token_limit(self) -> None:
         """Make sure that settings a custom token limit for chatgpt provider works."""
