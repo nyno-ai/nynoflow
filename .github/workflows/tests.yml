@@ -1,10 +1,13 @@
 name: Tests
 
 on:
-  - pull_request
+  pull_request_review:
+    types:
+      - submitted
 
 jobs:
   tests:
+    if: github.event.review.state == 'approved'
     name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -107,6 +110,7 @@ jobs:
           path: docs/_build
 
   coverage:
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     needs: tests
     steps:
