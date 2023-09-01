@@ -1,36 +1,28 @@
+import os
+from typing import TypedDict
+
 import pytest
-from pytest_mock import MockerFixture
-
-from nynoflow.chats._chatgpt import (
-    ChatgptResponse,
-    ChatgptResponseChoice,
-    ChatgptResponseMessage,
-    ChatgptResponseUsage,
-)
+from dotenv import load_dotenv
 
 
-chatgpt_response_message = ChatgptResponseMessage(
-    role="assistant",
-    content="Paris",
-)
+class ConfigTests(TypedDict):
+    """Config for testing."""
 
-chatgpt_response_choice = ChatgptResponseChoice(
-    index=0,
-    message=chatgpt_response_message,
-    finish_reason="stop",
-)
-
-chatgpt_response = ChatgptResponse(
-    id="chatcmpl-123",
-    object="chat.completion",
-    created=1677652288,
-    model="gpt-3.5-turbo-0613",
-    choices=[chatgpt_response_choice],
-    usage=ChatgptResponseUsage(prompt_tokens=9, completion_tokens=12, total_tokens=21),
-)
+    OPENAI_API_KEY: str
 
 
 @pytest.fixture(autouse=True)
-def mock_openai_chatgpt(mocker: MockerFixture) -> None:
-    """Mock the ChatGPT API."""
-    mocker.patch("openai.ChatCompletion.create", return_value=chatgpt_response)
+def config() -> ConfigTests:
+    """Load the test environment variables.
+
+    Returns:
+        ConfigTests: The test config.
+    """
+    load_dotenv(".env.test")
+
+    config = ConfigTests(
+        {
+            "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
+        }
+    )
+    return config

@@ -21,6 +21,8 @@
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 
+Nynoflow was built out of frustration with current tooling to build LLM applications. Some focus too much on UI building, which is limited at best. Some over-abstract on certain areas to the point that you can't understand what's the prompt being sent to the LLM. So here at nyno-ai, we set to build the best framework and tooling to build LLM applications for developers.
+
 ## Features
 
 - TODO
@@ -40,6 +42,16 @@ $ pip install nynoflow
 ## Usage
 
 - TODO
+
+## Defaults
+
+Here are all the default configuations you should make sure to review when creating an app with nynoflow:
+
+| Config                       | Description                                                                                                                                                                                                                                                                                             | Default |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Chat.completion.token_offset | This is used for the historical message cutoff (removing old messages when the token limit is exceeded). This number is the number of tokens you may require for the answer. This is deliberetly different then the token_limit because you may get more token space since messages are cut as a whole. | 16      |
+|                              |                                                                                                                                                                                                                                                                                                         |         |
+|                              |                                                                                                                                                                                                                                                                                                         |         |
 
 ## Contributing
 
