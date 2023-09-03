@@ -1,4 +1,4 @@
-from typing import Union, cast
+from typing import Optional, Union, cast
 from warnings import warn
 
 import openai
@@ -18,9 +18,9 @@ from nynoflow.utils.tokenizers.openai_tokenizer import ChatgptTiktokenTokenizer
 class ChatgptProvider:
     """LLM Engine for OpenAI ChatGPT."""
 
-    organization: str = field()
     api_key: str = field()
     model: str = field()
+    organization: Optional[str] = field(default=None)
 
     # functions: Union[list[ChatgptRequestFunction], None] = field(default=None)
     # function_call: Union[str, None] = field(default=None)
@@ -47,8 +47,7 @@ class ChatgptProvider:
     def __attrs_post_init__(self) -> None:
         """Configure the openai package with auth and configurations."""
         self.openai_chat_completion_client = openai.ChatCompletion(
-            api_key=self.api_key,
-            organization=self.organization,
+            api_key=self.api_key, organization=self.organization, model=self.model
         )
 
         self.tokenizer = ChatgptTiktokenTokenizer(self.model)
@@ -160,7 +159,12 @@ class ChatgptProvider:
             messages
         )
         req: ChatgptRequest = ChatgptRequest(messages=chatgpt_messages)
-        res: ChatgptResponse = self.openai_chat_completion_client.create(**req)
+        res: ChatgptResponse = self.openai_chat_completion_client.create(
+            api_key=self.api_key,
+            organization=self.organization,
+            model=self.model,
+            **req,
+        )
 
         content = cast(str, res["choices"][0]["message"]["content"])
         return content

@@ -1,5 +1,6 @@
 import pytest
 from attrs import define
+from pydantic import BaseModel
 from pytest_mock import MockerFixture
 from transformers import AutoTokenizer
 
@@ -10,6 +11,7 @@ from nynoflow.chats._gpt4all._gpt4all import Gpt4AllProvider
 from nynoflow.chats.chat_objects import ChatMessageHistory
 from nynoflow.util import logger
 from nynoflow.utils.tokenizers.base_tokenizer import BaseTokenizer
+from tests.conftest import ConfigTests
 
 
 chatgpt_response: ChatgptResponse = {
@@ -31,7 +33,7 @@ chatgpt_response: ChatgptResponse = {
 }
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def mock_openai_chatgpt(mocker: MockerFixture) -> None:
     """Mock the ChatGPT API."""
     mocker.patch("openai.ChatCompletion.create", return_value=chatgpt_response)
@@ -49,6 +51,7 @@ class Gpt4AllTokenizerOrcaMini3B(BaseTokenizer):
         return res
 
 
+@pytest.mark.usefixtures("mock_openai_chatgpt")
 class TestChat:
     """Test the Chat class."""
 
@@ -165,3 +168,29 @@ class TestChat:
             ]
         )
         chat.completion("Hello World!")
+
+
+class TestChatNoMocks:
+    """Test the Chat class without mocks."""
+
+    def test_output_formatter(self, config: ConfigTests) -> None:
+        """Test the output formatter to make sure the output is as expected."""
+        chat = Chat(
+            providers=[
+                ChatgptProvider(
+                    # organization="myorg",
+                    api_key=config["OPENAI_API_KEY"],
+                    model="gpt-3.5-turbo-0613",
+                    # temperature=0,
+                )
+            ]
+        )
+
+        class Person(BaseModel):
+            """This is a person."""
+
+            first_name: str
+            last_name: str
+
+        output = chat.completion("My friend name is john lennon.", output_format=Person)
+        assert output

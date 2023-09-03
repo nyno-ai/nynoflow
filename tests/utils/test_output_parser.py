@@ -1,12 +1,12 @@
 import json
 from copy import deepcopy
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional, cast
 
 import pytest
 from pydantic import BaseModel, Field
 
-from nynoflow.utils.output_parser import parse_output
+from nynoflow.utils.output_parser import output_parser
 
 
 class Gender(str, Enum):
@@ -66,7 +66,7 @@ class TestOutputParser:
     def test_valid_data(self) -> None:
         """Expect no raised exceptions with valid data."""
         valid_employee_json = json.dumps(self.valid_employee_data)
-        output = parse_output(Employee, valid_employee_json)
+        output = output_parser(Employee, valid_employee_json)
         assert output
 
     def test_missing_key(self) -> None:
@@ -75,24 +75,23 @@ class TestOutputParser:
         del data["gender"]
         json_data = json.dumps(data)
         with pytest.raises(ValueError):
-            parse_output(Employee, json_data)
+            output_parser(Employee, json_data)
 
     def test_missing_nested_key(self) -> None:
         """Expect a validation error if a required nested key is missing. Missing address state."""
-        data = deepcopy(self.valid_employee_data)
-        if isinstance(data["address"], dict):
-            del data["address"]["state"]
+        data = cast(dict[str, Any], deepcopy(self.valid_employee_data))
+        del data["address"]["state"]
 
         json_data = json.dumps(data)
         with pytest.raises(ValueError):
-            parse_output(Employee, json_data)
+            output_parser(Employee, json_data)
 
     def test_missing_optional_key(self) -> None:
         """Expect a validation error if an optional key is missing. Missing Social Media key."""
         data = deepcopy(self.valid_employee_data)
         del data["social_media"]
         json_data = json.dumps(data)
-        parse_output(Employee, json_data)
+        output_parser(Employee, json_data)
 
     def test_enum(self) -> None:
         """Except an exception if an enum value is not as expected. Gender is not a valid enum."""
@@ -100,7 +99,7 @@ class TestOutputParser:
         data["gender"] = "INVALID"
         json_data = json.dumps(data)
         with pytest.raises(ValueError):
-            parse_output(Employee, json_data)
+            output_parser(Employee, json_data)
 
     def test_invalid_range(self) -> None:
         """Expect a validation error if a value is not in the expected range. Age is not in range."""
@@ -108,4 +107,4 @@ class TestOutputParser:
         data["age"] = 10
         json_data = json.dumps(data)
         with pytest.raises(ValueError):
-            parse_output(Employee, json_data)
+            output_parser(Employee, json_data)
