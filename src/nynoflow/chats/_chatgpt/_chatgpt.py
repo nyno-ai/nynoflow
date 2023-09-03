@@ -6,7 +6,6 @@ from attrs import define, field
 
 from nynoflow.chats._chatgpt._chatgpt_objects import (
     ChatgptMessageHistory,
-    ChatgptRequest,
     ChatgptRequestMessage,
     ChatgptResponse,
 )
@@ -23,7 +22,6 @@ class ChatgptProvider:
 
     n: int = 1  # Number of completions to generate
     stream = False  # Streams not supported in this library yet
-
     organization: Optional[str] = field(default=None)
     temperature: Optional[float] = field(default=None)
     top_p: Optional[float] = field(default=None)
@@ -45,9 +43,7 @@ class ChatgptProvider:
 
     def __attrs_post_init__(self) -> None:
         """Configure the openai package with auth and configurations."""
-        self.openai_chat_completion_client = openai.ChatCompletion(
-            api_key=self.api_key, organization=self.organization, model=self.model
-        )
+        self.openai_chat_completion_client = openai.ChatCompletion()
 
         self.tokenizer = ChatgptTiktokenTokenizer(self.model)
 
@@ -157,12 +153,21 @@ class ChatgptProvider:
         chatgpt_messages: ChatgptMessageHistory = self._convert_message_history(
             messages
         )
-        req: ChatgptRequest = ChatgptRequest(messages=chatgpt_messages)
         res: ChatgptResponse = self.openai_chat_completion_client.create(
             api_key=self.api_key,
-            organization=self.organization,
             model=self.model,
-            **req,
+            messages=chatgpt_messages,
+            n=self.n,
+            stream=self.stream,
+            organization=self.organization,
+            temperature=self.temperature,
+            top_p=self.top_p,
+            stop=self.stop,
+            max_tokens=self.max_tokens,
+            presence_penalty=self.presence_penalty,
+            frequency_penalty=self.frequency_penalty,
+            logit_bias=self.logit_bias,
+            user=self.user,
         )
 
         content = cast(str, res["choices"][0]["message"]["content"])
