@@ -62,7 +62,7 @@ class Chat:
         provider_id: Union[str, None] = None,
         token_offset: int = 16,
         output_format: Optional[Type[BaseModel]] = None,
-    ) -> str | object:
+    ) -> Union[str, object]:
         """Chat Completion method for abstracting away the request/resopnse of each provider.
 
         Args:
