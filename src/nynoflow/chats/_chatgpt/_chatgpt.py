@@ -153,22 +153,27 @@ class ChatgptProvider:
         chatgpt_messages: ChatgptMessageHistory = self._convert_message_history(
             messages
         )
-        res: ChatgptResponse = self.openai_chat_completion_client.create(
-            api_key=self.api_key,
-            model=self.model,
-            messages=chatgpt_messages,
-            n=self.n,
-            stream=self.stream,
-            organization=self.organization,
-            temperature=self.temperature,
-            top_p=self.top_p,
-            stop=self.stop,
-            max_tokens=self.max_tokens,
-            presence_penalty=self.presence_penalty,
-            frequency_penalty=self.frequency_penalty,
-            logit_bias=self.logit_bias,
-            user=self.user,
-        )
+        optional_params = {
+            "n": self.n,
+            "stream": self.stream,
+            "organization": self.organization,
+            "temperature": self.temperature,
+            "top_p": self.top_p,
+            "stop": self.stop,
+            "max_tokens": self.max_tokens,
+            "presence_penalty": self.presence_penalty,
+            "frequency_penalty": self.frequency_penalty,
+            "logit_bias": self.logit_bias,
+            "user": self.user,
+        }
+
+        params = {
+            "api_key": self.api_key,
+            "model": self.model,
+            "messages": chatgpt_messages,
+            **{k: v for k, v in optional_params.items() if v is not None},
+        }
+        res: ChatgptResponse = self.openai_chat_completion_client.create(**params)
 
         content = cast(str, res["choices"][0]["message"]["content"])
         return content
