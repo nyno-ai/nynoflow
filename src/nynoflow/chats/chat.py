@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 from typing import Any, Optional, Type, Union
 
@@ -79,7 +80,7 @@ class Chat:
 
         formatted_prompt = str(prompt)
         if output_format is not None:
-            json_schema = output_format.schema_json()
+            json_schema = json.dumps(output_format.model_json_schema())
             formatted_prompt = render_output_formatter(prompt, json_schema)
 
         self._message_history.append(
