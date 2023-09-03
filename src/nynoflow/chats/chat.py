@@ -1,10 +1,15 @@
+import json
 from copy import deepcopy
-from typing import Any, Union
+from typing import Any, Optional, Type, Union
 
 from attrs import define, field
+from pydantic import BaseModel
 
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
 from nynoflow.chats._gpt4all._gpt4all import Gpt4AllProvider
+from nynoflow.util import logger
+from nynoflow.utils.output_parser import output_parser
+from nynoflow.utils.templates.load_template import render_output_formatter
 
 from .chat_objects import ChatMessageHistory
 
@@ -53,37 +58,53 @@ class Chat:
     _message_history = ChatMessageHistory()
 
     def completion(
-        self, prompt: str, provider_id: Union[str, None] = None, token_offset: int = 16
-    ) -> str:
+        self,
+        prompt: str,
+        provider_id: Union[str, None] = None,
+        token_offset: int = 16,
+        output_format: Optional[Type[BaseModel]] = None,
+    ) -> Union[str, object]:
         """Chat Completion method for abstracting away the request/resopnse of each provider.
 
         Args:
             prompt (str): The message to use for the completion.
             provider_id (str, optional): The provider_id to use. Defaults to None (only applicable if there is one provider).
             token_offset (int): The minimum number of tokens to offset for the response. Defaults to 16.
+            output_format (Optional[Type[BaseModel]], optional): The output format to use. Defaults to None.
+
 
         Returns:
             str: The completion of the prompt.
         """
         provider = self._get_provider(provider_id)
+
+        formatted_prompt = str(prompt)
+        if output_format is not None:
+            json_schema = json.dumps(output_format.model_json_schema())
+            formatted_prompt = render_output_formatter(prompt, json_schema)
+
+        self._message_history.append(
+            {
+                "provider_id": provider.provider_id,
+                "content": formatted_prompt,
+                "role": "user",
+            },
+        )
         message_history_after_cutoff = self._cutoff_message_history(
             provider, token_offset
         )
         completion = provider.completion(message_history_after_cutoff)
-        self._message_history.extend(
-            [
-                {
-                    "provider_id": provider.provider_id,
-                    "content": prompt,
-                    "role": "user",
-                },
-                {
-                    "provider_id": provider.provider_id,
-                    "content": completion,
-                    "role": "assistant",
-                },
-            ]
+        self._message_history.append(
+            {
+                "provider_id": provider.provider_id,
+                "content": completion,
+                "role": "assistant",
+            },
         )
+        logger.debug(self)
+        if output_format is not None:
+            return output_parser(output_format, completion)
+
         return completion
 
     def _cutoff_message_history(

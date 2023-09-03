@@ -43,10 +43,4 @@ class ChatgptRequestMessage(TypedDict, total=False):
     name: Union[str, None]
 
 
-class ChatgptRequest(TypedDict, total=False):
-    """This is the request object for chatgpt completions."""
-
-    messages: list[ChatgptRequestMessage]
-
-
 ChatgptMessageHistory = list[ChatgptRequestMessage]
