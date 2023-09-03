@@ -63,7 +63,6 @@ class TestChat:
         token_limit=400,  # It is actually 1024 but to save some compute time we use 400
     )
     chatgpt_provider = ChatgptProvider(
-        organization="myorg",
         api_key="sk-123",
         model="gpt-3.5-turbo-0613",
     )
@@ -89,13 +88,11 @@ class TestChat:
                 providers=[
                     ChatgptProvider(
                         provider_id="chatgpt",
-                        organization="myorg",
                         api_key="sk-123",
                         model="gpt-3.5-turbo-0613",
                     ),
                     ChatgptProvider(
                         provider_id="chatgpt",
-                        organization="myorg",
                         api_key="sk-123",
                         model="gpt-3.5-turbo-0613",
                     ),
@@ -161,7 +158,6 @@ class TestChat:
                 ChatgptProvider(
                     provider_id="chatgpt",
                     model="gpt-3.5-turbo-0613",
-                    organization="myorg",
                     api_key="sk-123",
                     token_limit=300,
                 )
@@ -178,10 +174,9 @@ class TestChatNoMocks:
         chat = Chat(
             providers=[
                 ChatgptProvider(
-                    # organization="myorg",
                     api_key=config["OPENAI_API_KEY"],
-                    model="gpt-3.5-turbo-0613",
-                    # temperature=0,
+                    model="gpt-4-0613",
+                    temperature=0,
                 )
             ]
         )

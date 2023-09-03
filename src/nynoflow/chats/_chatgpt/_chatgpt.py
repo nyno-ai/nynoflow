@@ -20,26 +20,25 @@ class ChatgptProvider:
 
     api_key: str = field()
     model: str = field()
-    organization: Optional[str] = field(default=None)
 
-    # functions: Union[list[ChatgptRequestFunction], None] = field(default=None)
-    # function_call: Union[str, None] = field(default=None)
-    # temperature: Union[float, None] = field(default=None)
-    # top_p: Union[float, None] = field(default=None)
-    # n: Union[int, None] = field(default=None) # Make sure it isn't more then 1
-    # stream = False  # Streams not supported in this library yet
-    # stop: Union[str, list[str], None] = field(default=None)
-    # max_tokens: Union[int, None] = field(default=None)
-    # presence_penalty: Union[float, None] = field(default=None)
-    # frequency_penalty: Union[float, None] = field(default=None)
-    # logit_bias: Union[dict[str, float], None] = field(default=None)
-    # user: Union[str, None] = field(default=None)
+    n: int = 1  # Number of completions to generate
+    stream = False  # Streams not supported in this library yet
+
+    organization: Optional[str] = field(default=None)
+    temperature: Optional[float] = field(default=None)
+    top_p: Optional[float] = field(default=None)
+    stop: Optional[Union[str, list[str]]] = field(default=None)
+    max_tokens: Optional[int] = field(default=None)
+    presence_penalty: Optional[float] = field(default=None)
+    frequency_penalty: Optional[float] = field(default=None)
+    logit_bias: Optional[dict[str, float]] = field(default=None)
+    user: Optional[str] = field(default=None)
 
     provider_id: str = field(default="chatgpt")
     openai_chat_completion_client: openai.ChatCompletion = field(init=False)
     tokenizer: ChatgptTiktokenTokenizer = field(init=False)
 
-    # It is reachable using ChatgptProvider.token_limit using the getter function, and
+    # It is accesible using ChatgptProvider.token_limit using the getter function, and
     # setable using ChatgptProvider(token_limit=n) using the setter function, and by deafult
     # is set to the token limit of the model using the post attributes init function.
     _token_limit: Union[int, None] = field(default=None)
