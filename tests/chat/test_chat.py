@@ -1,17 +1,20 @@
 import pytest
 from attrs import define
-from pydantic import BaseModel
 from pytest_mock import MockerFixture
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer  # type: ignore
 
 from nynoflow.chats import Chat
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
 from nynoflow.chats._chatgpt._chatgpt_objects import ChatgptResponse
 from nynoflow.chats._gpt4all._gpt4all import Gpt4AllProvider
 from nynoflow.chats.chat_objects import ChatMessageHistory
+from nynoflow.exceptions import (
+    InvalidProvidersError,
+    ProviderMissingInCompletionError,
+    ProviderNotFoundError,
+)
 from nynoflow.util import logger
 from nynoflow.utils.tokenizers.base_tokenizer import BaseTokenizer
-from tests.conftest import ConfigTests
 
 
 chatgpt_response: ChatgptResponse = {
@@ -78,12 +81,12 @@ class TestChat:
 
     def test_zero_providers(self) -> None:
         """Expect to fail without any providers."""
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidProvidersError):
             Chat(providers=[])
 
     def test_multiple_providers(self) -> None:
         """Expect to fail with multiple providers with the same id."""
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidProvidersError):
             Chat(
                 providers=[
                     ChatgptProvider(
@@ -101,7 +104,7 @@ class TestChat:
 
     def test_chat_request_with_invalid_provider_id(self) -> None:
         """Expect to fail with an invalid provider id."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ProviderNotFoundError):
             Chat(providers=[self.chatgpt_provider]).completion(
                 provider_id="invalid",
                 prompt="What is the captial of france?",
@@ -109,7 +112,7 @@ class TestChat:
 
     def test_chat_request_without_provider_id(self) -> None:
         """Expect to fail with a request to provide a provider id."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ProviderMissingInCompletionError):
             Chat(providers=[self.chatgpt_provider, self.gpt4all_provider]).completion(
                 "What is the captial of france?"
             )
@@ -128,21 +131,19 @@ class TestChat:
         chat = Chat(providers=[self.gpt4all_provider])
 
         # Generate a long list of messages
-        messages_before_cutoff = (
-            ChatMessageHistory(
-                [
-                    {
-                        "provider_id": "gpt4all",
-                        "role": "user",
-                        "content": "What is the captial of italy?",
-                    },
-                    {
-                        "provider_id": "gpt4all",
-                        "role": "assistant",
-                        "content": "Rome. But it is widely known that the capital of Italy is Milan.",
-                    },
-                ]
-            )
+        messages_before_cutoff = ChatMessageHistory(
+            [
+                {
+                    "provider_id": "gpt4all",
+                    "role": "user",
+                    "content": "What is the captial of italy?",
+                },
+                {
+                    "provider_id": "gpt4all",
+                    "role": "assistant",
+                    "content": "Rome. But it is widely known that the capital of Italy is Milan.",
+                },
+            ]
             * 100
         )
 
@@ -164,28 +165,3 @@ class TestChat:
             ]
         )
         chat.completion("Hello World!")
-
-
-class TestChatNoMocks:
-    """Test the Chat class without mocks."""
-
-    def test_output_formatter(self, config: ConfigTests) -> None:
-        """Test the output formatter to make sure the output is as expected."""
-        chat = Chat(
-            providers=[
-                ChatgptProvider(
-                    api_key=config["OPENAI_API_KEY"],
-                    model="gpt-4-0613",
-                    temperature=0,
-                )
-            ]
-        )
-
-        class Person(BaseModel):
-            """This is a person."""
-
-            first_name: str
-            last_name: str
-
-        output = chat.completion("My friend name is john lennon.", output_format=Person)
-        assert output

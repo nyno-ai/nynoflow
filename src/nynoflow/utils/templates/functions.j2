@@ -1,0 +1,45 @@
+{{ prompt }}
+
+The following functions are available to help the user with his prompt:
+{% for function in functions %}
+Name: {{ function.name }}
+Description: {{ function.description }}
+Parameters:
+{% for name, param in function.parameters.properties.items() %}
+    Name: {{ name }}
+    Description: {{ param.description }}
+    Type: {{ param.type }}
+    Required: {{ 'Yes' if param in function.parameters.required else 'No' }}
+{% endfor %}
+{% endfor %}
+
+You have two options for responding to the user's query:
+Direct Response: You can provide an answer directly to the user's question without invoking any function. Simply reply as you normally would.
+Function Invocation: If the query requires external information or an action, generate a JSON object containing the function name and the required arguments. I will then invoke the function using the parameters you provide and relay the result back to the user. Note that if you choose to respond with a function call, you should generate a JSON object that strictly adheres to the 'example' field specified in the given JSON schema. Your response should only consist of this JSON object, without any additional information, characters, or the schema itself.
+{"type":"object","properties":{"name":{"type":"string"},"arguments":{"type":"string"}},"required":["name","arguments"]}
+
+Examples:
+    Function:
+        Name: add
+        Description: Adds two numbers together
+        Parameters:
+            Name: numbers
+            Description: An array of numbers to add together
+            Type: array
+            Required: Yes
+
+    Invocation:
+        {"name":"add","arguments": {"numbers": [1, 2]}
+
+
+    Function:
+        Name: echo
+        Description: Returns the given value
+        Parameters:
+            Name: value
+            Description: The value to return
+            Type: string
+            Required: Yes
+
+    Invocation:
+        {"name":"echo","arguments": {"value": "Hello World!"}}

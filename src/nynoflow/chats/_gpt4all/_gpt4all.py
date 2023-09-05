@@ -1,5 +1,5 @@
 from attrs import define, field
-from gpt4all import GPT4All
+from gpt4all import GPT4All  # type: ignore
 
 from nynoflow.chats.chat_objects import ChatMessageHistory
 from nynoflow.utils.tokenizers.base_tokenizer import BaseTokenizer

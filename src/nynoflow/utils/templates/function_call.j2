@@ -1,0 +1,41 @@
+{{ prompt }}
+
+The following function is available:
+Name: {{ function.name }}
+Description: {{ function.description }}
+Parameters:
+{% for name, param in function.parameters.properties.items() %}
+    Name: {{ name }}
+    Description: {{ param.description }}
+    Type: {{ param.type }}
+    Required: {{ 'Yes' if param in function.parameters.required else 'No' }}
+{% endfor %}
+
+You must respond with a function Invocation. Generate a JSON object containing the function name and the required arguments. I will then invoke the function using the parameters you provided and relay the result back to the user. You should generate a JSON object that strictly adheres to the 'example' field specified in the given JSON schema. Your response should only consist of this JSON object, without any additional information, characters, or the schema itself.
+{"type":"object","properties":{"name":{"type":"string"},"arguments":{"type":"string"}},"required":["name","arguments"]}
+
+Examples:
+    Function:
+        Name: add
+        Description: Adds two numbers together
+        Parameters:
+            Name: numbers
+            Description: An array of numbers to add together
+            Type: array
+            Required: Yes
+
+    Invocation:
+        {"name":"add","arguments": {"numbers": [1, 2]}
+
+
+    Function:
+        Name: echo
+        Description: Returns the given value
+        Parameters:
+            Name: value
+            Description: The value to return
+            Type: string
+            Required: Yes
+
+    Invocation:
+        {"name":"echo","arguments": {"value": "Hello World!"}}

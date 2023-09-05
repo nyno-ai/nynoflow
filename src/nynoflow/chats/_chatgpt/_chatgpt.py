@@ -10,6 +10,7 @@ from nynoflow.chats._chatgpt._chatgpt_objects import (
     ChatgptResponse,
 )
 from nynoflow.chats.chat_objects import ChatMessageHistory
+from nynoflow.util import logger
 from nynoflow.utils.tokenizers.openai_tokenizer import ChatgptTiktokenTokenizer
 
 
@@ -173,6 +174,7 @@ class ChatgptProvider:
             "messages": chatgpt_messages,
             **{k: v for k, v in optional_params.items() if v is not None},
         }
+        logger.debug(f"Calling the OpenAI API with params: {params}")
         res: ChatgptResponse = self.openai_chat_completion_client.create(**params)
 
         content = cast(str, res["choices"][0]["message"]["content"])

@@ -6,6 +6,7 @@ from typing import Any, Optional, cast
 import pytest
 from pydantic import BaseModel, Field
 
+from nynoflow.exceptions import InvalidOutputError
 from nynoflow.utils.output_parser import output_parser
 
 
@@ -74,7 +75,7 @@ class TestOutputParser:
         data = deepcopy(self.valid_employee_data)
         del data["gender"]
         json_data = json.dumps(data)
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidOutputError):
             output_parser(Employee, json_data)
 
     def test_missing_nested_key(self) -> None:
@@ -83,7 +84,7 @@ class TestOutputParser:
         del data["address"]["state"]
 
         json_data = json.dumps(data)
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidOutputError):
             output_parser(Employee, json_data)
 
     def test_missing_optional_key(self) -> None:
@@ -98,7 +99,7 @@ class TestOutputParser:
         data = deepcopy(self.valid_employee_data)
         data["gender"] = "INVALID"
         json_data = json.dumps(data)
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidOutputError):
             output_parser(Employee, json_data)
 
     def test_invalid_range(self) -> None:
@@ -106,5 +107,5 @@ class TestOutputParser:
         data = deepcopy(self.valid_employee_data)
         data["age"] = 10
         json_data = json.dumps(data)
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidOutputError):
             output_parser(Employee, json_data)
