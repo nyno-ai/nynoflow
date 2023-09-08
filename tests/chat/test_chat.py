@@ -1,5 +1,6 @@
 import pytest
 from attrs import define
+from gpt4all import GPT4All  # type: ignore
 from openai.error import ServiceUnavailableError as OpenaiServiceUnavailableError
 from pytest_mock import MockerFixture
 from transformers import AutoTokenizer  # type: ignore
@@ -27,6 +28,11 @@ chatgpt_response: ChatgptResponse = render_chatgpt_response("Paris")
 def mock_openai_chatgpt(mocker: MockerFixture) -> None:
     """Mock the ChatGPT API."""
     mocker.patch("openai.ChatCompletion.create", return_value=chatgpt_response)
+
+    # Avoid downloading the model file
+    mocker.patch.object(GPT4All, "__init__", lambda x, y: None)
+    # Mock the generated content
+    mocker.patch.object(GPT4All, "generate", return_value="Paris")
 
 
 @define
