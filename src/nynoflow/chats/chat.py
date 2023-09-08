@@ -241,13 +241,13 @@ class Chat:
                 self._clean_auto_fixer_failed_attempts(failed_attempts=attempt - 1)
                 return response, result
             except InvalidResponseError as err:
-                if attempt <= auto_fixer_retries:
-                    warn(
-                        f"Failed to fix response {response} due to error {err}. Retrying. Attempt number {attempt}"
-                    )
-                    current_prompt = str(err)
-                else:
-                    raise err
+                last_exception: InvalidResponseError = err
+                warn(
+                    f"Failed to fix response {response} due to error {err}. Retrying. Attempt number {attempt}"
+                )
+                current_prompt = str(err)
+
+        raise InvalidResponseError(last_exception)
 
     def _clean_auto_fixer_failed_attempts(self, failed_attempts: int) -> None:
         """Clean the message history from the failed attempts of the auto fixer.
@@ -345,13 +345,13 @@ class Chat:
             try:
                 return provider.completion(messages)
             except ServiceUnavailableError as err:
-                if attempt <= provider.retries_on_service_error:
-                    warn(
-                        f"Failed to get completion from provider {provider.provider_id}"
-                        f"due to error {err}. Attempt number {attempt}"
-                    )
-                else:
-                    raise ServiceUnavailableError from err
+                warn(
+                    f"Failed to get completion from provider {provider.provider_id}"
+                    f"due to error {err}. Attempt number {attempt}"
+                )
+                last_exception = err
+
+        raise ServiceUnavailableError(last_exception)
 
     def _invoke_function(
         self, function_invocation: FunctionInvocation, functions: list[Function[Any]]

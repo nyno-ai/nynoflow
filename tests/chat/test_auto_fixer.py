@@ -112,3 +112,24 @@ class TestChatAutoFixer:
         assert len(chat._message_history) == 2
         assert chat._message_history[0]["content"] == "What is the captial of italy?"
         assert chat._message_history[1]["content"] == "Rome."
+
+    def test_auto_fixer_failure(self) -> None:
+        """Test that the auto fixer fails after too many failures."""
+
+        def my_invalid_auto_fixer(response: str) -> str:
+            raise InvalidResponseError("Please do this fix and that fix")
+
+        chat = Chat(
+            providers=[
+                ChatgptProvider(
+                    model="gpt-3.5-turbo-0613",
+                    api_key="sk-123",
+                )
+            ]
+        )
+        with pytest.raises(InvalidResponseError):
+            chat.completion_with_auto_fixer(
+                "What is the captical of france?",
+                auto_fixer=my_invalid_auto_fixer,
+                auto_fixer_retries=2,
+            )
