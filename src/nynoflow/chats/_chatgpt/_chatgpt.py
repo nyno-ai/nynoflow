@@ -3,6 +3,7 @@ from warnings import warn
 
 import openai
 from attrs import define, field
+from openai.error import ServiceUnavailableError as OpenaiServiceUnavailableError
 
 from nynoflow.chats._chatgpt._chatgpt_objects import (
     ChatgptMessageHistory,
@@ -10,6 +11,7 @@ from nynoflow.chats._chatgpt._chatgpt_objects import (
     ChatgptResponse,
 )
 from nynoflow.chats.chat_objects import ChatMessageHistory
+from nynoflow.exceptions import ServiceUnavailableError
 from nynoflow.util import logger
 from nynoflow.utils.tokenizers.openai_tokenizer import ChatgptTiktokenTokenizer
 
@@ -36,6 +38,7 @@ class ChatgptProvider:
     provider_id: str = field(default="chatgpt")
     openai_chat_completion_client: openai.ChatCompletion = field(init=False)
     tokenizer: ChatgptTiktokenTokenizer = field(init=False)
+    retries_on_service_error: int = field(default=0)
 
     # It is accesible using ChatgptProvider.token_limit using the getter function, and
     # setable using ChatgptProvider(token_limit=n) using the setter function, and by deafult
@@ -145,6 +148,9 @@ class ChatgptProvider:
     def completion(self, messages: ChatMessageHistory) -> str:
         """Get a completion from the OpenAI API.
 
+        Raises:
+            ServiceUnavailableError: If the OpenAI API is unavailable.
+
         Args:
             messages (ChatMessageHistory): The message history to prompt with.
 
@@ -175,7 +181,10 @@ class ChatgptProvider:
             **{k: v for k, v in optional_params.items() if v is not None},
         }
         logger.debug(f"Calling the OpenAI API with params: {params}")
-        res: ChatgptResponse = self.openai_chat_completion_client.create(**params)
+        try:
+            res: ChatgptResponse = self.openai_chat_completion_client.create(**params)
+        except OpenaiServiceUnavailableError as err:
+            raise ServiceUnavailableError from err
 
         content = cast(str, res["choices"][0]["message"]["content"])
         return content

@@ -1,5 +1,6 @@
 import pytest
 from attrs import define
+from openai.error import ServiceUnavailableError as OpenaiServiceUnavailableError
 from pytest_mock import MockerFixture
 from transformers import AutoTokenizer  # type: ignore
 
@@ -12,31 +13,17 @@ from nynoflow.exceptions import (
     InvalidProvidersError,
     ProviderMissingInCompletionError,
     ProviderNotFoundError,
+    ServiceUnavailableError,
 )
 from nynoflow.util import logger
 from nynoflow.utils.tokenizers.base_tokenizer import BaseTokenizer
+from tests.chat.helpers import render_chatgpt_response
 
 
-chatgpt_response: ChatgptResponse = {
-    "id": "chatcmpl-123",
-    "object": "chat.completion",
-    "created": 1677652288,
-    "model": "gpt-3.5-turbo-0613",
-    "choices": [
-        {
-            "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": "Paris",
-            },
-            "finish_reason": "stop",
-        }
-    ],
-    "usage": {"prompt_tokens": 9, "completion_tokens": 12, "total_tokens": 21},
-}
+chatgpt_response: ChatgptResponse = render_chatgpt_response("Paris")
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def mock_openai_chatgpt(mocker: MockerFixture) -> None:
     """Mock the ChatGPT API."""
     mocker.patch("openai.ChatCompletion.create", return_value=chatgpt_response)
@@ -54,7 +41,6 @@ class Gpt4AllTokenizerOrcaMini3B(BaseTokenizer):
         return res
 
 
-@pytest.mark.usefixtures("mock_openai_chatgpt")
 class TestChat:
     """Test the Chat class."""
 
@@ -165,3 +151,48 @@ class TestChat:
             ]
         )
         chat.completion("Hello World!")
+
+    def test_service_unavailable_retries_success(self, mocker: MockerFixture) -> None:
+        """Test the service unavailable retries succeed after multiple tries."""
+        chat = Chat(
+            providers=[
+                ChatgptProvider(
+                    provider_id="chatgpt",
+                    model="gpt-3.5-turbo-0613",
+                    api_key="sk-123",
+                    retries_on_service_error=5,
+                )
+            ]
+        )
+
+        # Will fail the first 2 times and then return the chatgpt_response
+        mocker.patch(
+            "openai.ChatCompletion.create",
+            side_effect=[
+                OpenaiServiceUnavailableError(),
+                OpenaiServiceUnavailableError(),
+                chatgpt_response,
+            ],
+        )
+
+        # Will succeed the third time
+        assert chat.completion("What is the captical of france?") == "Paris"
+
+    def test_service_unavailable_retries_failure(self, mocker: MockerFixture) -> None:
+        """Test the service unavailable error with the chatgpt provider."""
+        chat = Chat(
+            providers=[
+                ChatgptProvider(
+                    model="gpt-3.5-turbo-0613",
+                    api_key="sk-123",
+                    retries_on_service_error=5,
+                )
+            ]
+        )
+        mocker.patch(
+            "openai.ChatCompletion.create",
+            side_effect=OpenaiServiceUnavailableError(),
+        )
+
+        with pytest.raises(ServiceUnavailableError):
+            chat.completion("What is the captical of france?")

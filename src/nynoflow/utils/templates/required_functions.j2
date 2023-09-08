@@ -1,6 +1,7 @@
 {{ prompt }}
 
-The following function is available:
+The following functions are available to help the user with his prompt:
+{% for function in functions %}
 Name: {{ function.name }}
 Description: {{ function.description }}
 Parameters:
@@ -10,8 +11,9 @@ Parameters:
     Type: {{ param.type }}
     Required: {{ 'Yes' if param in function.parameters.required else 'No' }}
 {% endfor %}
+{% endfor %}
 
-You must respond with a function Invocation. Generate a JSON object containing the function name and the required arguments. I will then invoke the function using the parameters you provided and relay the result back to the user. You should generate a JSON object that strictly adheres to the 'example' field specified in the given JSON schema. Your response should only consist of this JSON object, without any additional information, characters, or the schema itself.
+You must respond with a function invocation for one of the functions provided according to his prompt. Generate a JSON object containing the function name and the required arguments. I will then invoke the function using the parameters you provided and relay the result back to the user. You should generate a JSON object that strictly adheres to the 'example' field specified in the given JSON schema. Your response should only consist of this JSON object, without any additional information, characters, or the schema itself.
 {"type":"object","properties":{"name":{"type":"string"},"arguments":{"type":"string"}},"required":["name","arguments"]}
 
 Examples:

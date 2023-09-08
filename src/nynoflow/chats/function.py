@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Callable, Literal, get_type_hints
+from typing import Any, Callable, Generic, Literal, TypeVar, get_type_hints
 from warnings import warn
 
 import jsonschema  # type: ignore
@@ -15,16 +15,28 @@ from nynoflow.exceptions import (
 )
 
 
+FunctionReturnType = TypeVar("FunctionReturnType")
+
+
 @define
-class Function:
-    """Implements the functions for the LLM apps."""
+class Function(Generic[FunctionReturnType]):
+    """Implements the functions for the LLM apps.
+
+    Args:
+        name (str): The name of the function.
+        description (str): The description of the function.
+        func (Callable[..., FunctionReturnType]): The function to invoke.
+        parameters (dict[str, Any]): The parameters of the function.
+        retries_on_error (int, optional): Number of times to reprompt if the LLM responds with bad invocation data. Defaults to 0.
+    """
 
     name: str = field()
     description: str = field()
-    func: Callable[..., Any] = field()
+    func: Callable[..., FunctionReturnType] = field()
     parameters: dict[str, Any] = field()
+    retries_on_error: int = field(default=0)
 
-    def invoke(self, **kwargs: Any) -> Any:
+    def invoke(self, **kwargs: Any) -> FunctionReturnType:
         """Invoke the function with the given parameters.
 
         Raises:
@@ -34,7 +46,7 @@ class Function:
             kwargs: The parameters to pass to the function.
 
         Returns:
-            Any: The return value of the function.
+            FunctionReturnType: The return value of the function.
         """
         # Verify the arguments and their types againts the parameters schema
         try:
@@ -47,7 +59,9 @@ class Function:
         return self.func(**kwargs)
 
     @classmethod
-    def from_function(cls, func: Callable[..., Any]) -> "Function":
+    def from_function(
+        cls, func: Callable[..., FunctionReturnType]
+    ) -> "Function[FunctionReturnType]":
         """Parse a function docstring and type hints to get the name, description and parameters.
 
         The parsing is done in the following way:
@@ -68,7 +82,7 @@ class Function:
             MissingTypeHintsError: If the function does not have type hints for some arguments.
 
         Args:
-            func (Callable[..., Any]): The function to parse.
+            func (FuncType): The function to parse.
 
         Returns:
             Function: The Function instance with the parsed docstring.
