@@ -247,7 +247,7 @@ class Chat:
                 )
                 current_prompt = str(err)
 
-        raise InvalidResponseError(last_exception)
+        raise InvalidResponseError from last_exception.__cause__
 
     def _clean_auto_fixer_failed_attempts(self, failed_attempts: int) -> None:
         """Clean the message history from the failed attempts of the auto fixer.
@@ -347,11 +347,11 @@ class Chat:
             except ServiceUnavailableError as err:
                 warn(
                     f"Failed to get completion from provider {provider.provider_id}"
-                    f"due to error {err}. Attempt number {attempt}"
+                    f"due to {err}. Attempt number {attempt}"
                 )
                 last_exception = err
 
-        raise ServiceUnavailableError(last_exception)
+        raise ServiceUnavailableError from last_exception.__cause__
 
     def _invoke_function(
         self, function_invocation: FunctionInvocation, functions: list[Function[Any]]
