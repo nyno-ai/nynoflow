@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 
 class ChatMessage(TypedDict):
@@ -6,7 +6,7 @@ class ChatMessage(TypedDict):
 
     provider_id: str
     content: str
-    role: str
+    role: Literal["user", "assistant", "system", "function"]
 
 
 class ChatMessageHistory(list[ChatMessage]):

@@ -16,6 +16,7 @@ class Gpt4AllProvider:
     allow_download: bool = field(default=False)
 
     provider_id: str = field(default="gpt4all")
+    retries_on_service_error: int = field(default=0)
 
     _gpt4all_client: GPT4All = field(init=False)
 

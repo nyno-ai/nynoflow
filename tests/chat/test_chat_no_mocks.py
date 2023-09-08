@@ -26,5 +26,7 @@ class TestChatNoMocks:
             first_name: str
             last_name: str
 
-        output = chat.completion("My friend name is john lennon.", output_format=Person)
+        output = chat.completion_with_output_formatter(
+            "My friend name is john lennon.", output_format=Person
+        )
         assert output

@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from jinja2 import Template
 
@@ -36,7 +37,7 @@ def render_output_formatter(prompt: str, json_schema_format: str) -> str:
     return template.render(prompt=prompt, json_schema_format=json_schema_format)
 
 
-def render_functions(prompt: str, functions: list[Function]) -> str:
+def render_optional_functions(prompt: str, functions: list[Function[Any]]) -> str:
     """Render the functions template.
 
     Args:
@@ -46,19 +47,19 @@ def render_functions(prompt: str, functions: list[Function]) -> str:
     Returns:
         str: The rendered functions template.
     """
-    template = read_template("functions.j2")
+    template = read_template("optional_functions.j2")
     return template.render(prompt=prompt, functions=functions)
 
 
-def render_function_call(prompt: str, function: Function) -> str:
+def render_required_functions(prompt: str, functions: list[Function[Any]]) -> str:
     """Render the function call template.
 
     Args:
         prompt (str): The prompt to be used in the function call template.
-        function (Function): The function to be used in the function call template.
+        functions (list[Function]): The function to be used in the function call template.
 
     Returns:
         str: The rendered function call template.
     """
-    template = read_template("function_call.j2")
-    return template.render(prompt=prompt, function=function)
+    template = read_template("required_functions.j2")
+    return template.render(prompt=prompt, functions=functions)
