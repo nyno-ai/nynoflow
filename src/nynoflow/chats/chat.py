@@ -202,7 +202,7 @@ class Chat:
 
         return obj
 
-    def completion_with_auto_fixer(  # type: ignore # MyPy false positive about not always returning a value from the loop
+    def completion_with_auto_fixer(
         self,
         prompt: str,
         auto_fixer: Callable[[str], AutoFixerType],
@@ -322,7 +322,7 @@ class Chat:
             self._message_history.remove(user_message)
             raise err
 
-    def _prompt_provider_with_retry(  # type: ignore # MyPy false positive about not always returning a value from the loop
+    def _prompt_provider_with_retry(
         self,
         provider: ChatProviderType,
         messages: ChatMessageHistory,
