@@ -30,17 +30,6 @@ class MissingTypeHintsError(Exception):
         super().__init__(message)
 
 
-# Function Call Exceptions
-class InvalidFunctionCallRequestError(Exception):
-    """The function call provided by the user is invalid."""
-
-    def __init__(
-        self, message: str = "The function call provided by the user is invalid."
-    ) -> None:
-        """Initialize the exception."""
-        super().__init__(message)
-
-
 class InvalidFunctionCallResponseError(Exception):
     """The function call provided by the LLM is invalid."""
 
@@ -52,6 +41,14 @@ class InvalidFunctionCallResponseError(Exception):
 
 
 # Chat Exceptions
+class ServiceUnavailableError(Exception):
+    """The chat recieved a service unavailable error."""
+
+
+class InvalidResponseError(Exception):
+    """The LLM responded with a response that is not valid according to the condition specified."""
+
+
 class InvalidProvidersError(Exception):
     """The chat recieved invalid providers."""
 
@@ -76,14 +73,3 @@ class ProviderNotFoundError(Exception):
         super().__init__(
             f"Unable to find the provider with the given provider id ({provider_id})."
         )
-
-
-# Output Parser Exceptions
-class InvalidOutputError(Exception):
-    """The output parser recieved invalid output."""
-
-    def __init__(
-        self, message: str = "The output parser recieved invalid output."
-    ) -> None:
-        """Initialize the exception."""
-        super().__init__(message)

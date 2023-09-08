@@ -2,14 +2,15 @@ from enum import Enum
 
 import pytest
 from pydantic import BaseModel
+from pytest_mock import MockerFixture
 
 from nynoflow.chats import Chat
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
 from nynoflow.chats.chat import FunctionInvocation
 from nynoflow.chats.function import Function
 from nynoflow.exceptions import (
-    InvalidFunctionCallRequestError,
     InvalidFunctionCallResponseError,
+    InvalidResponseError,
     MissingDescriptionError,
     MissingDocstringError,
     MissingTypeHintsError,
@@ -43,6 +44,17 @@ def say_hey(name: str) -> str:
     return f"Hello {name}"
 
 
+def get_random_number() -> (
+    int
+):  # pragma: no cover # Ignored because the function is not called
+    """Get a random number.
+
+    Returns:
+        int: The random number.
+    """
+    return 4
+
+
 class TestChatFunctions:
     """Test the chat function."""
 
@@ -58,7 +70,7 @@ class TestChatFunctions:
             ]
         )
 
-        response = chat.completion(
+        response = chat.completion_with_functions(
             "What is the weather in boston?",
             functions=[
                 Function(
@@ -96,7 +108,7 @@ class TestChatFunctions:
             ]
         )
 
-        response = chat.completion(
+        response = chat.completion_with_functions(
             "What is the weather in boston?",
             functions=[Function.from_function(get_weather)],
         )
@@ -227,53 +239,13 @@ class TestFunctionCall:
             ]
         )
 
-        response = chat.completion(
+        response = chat.completion_with_functions(
             "Hey my name is john",
             functions=[Function.from_function(say_hey)],
-            function_call={"name": "say_hey"},
+            require_function_call=True,
         )
         assert isinstance(response, str)
         assert response.lower() == "hello john"
-
-    def test_invalid_function_call_name_in_request(self, config: ConfigTests) -> None:
-        """Test an invalid function call name in the user request."""
-        chat = Chat(
-            providers=[
-                ChatgptProvider(
-                    api_key=config["OPENAI_API_KEY"],
-                    model="gpt-3.5-turbo-0613",
-                    temperature=0,
-                )
-            ]
-        )
-
-        with pytest.raises(InvalidFunctionCallRequestError):
-            chat.completion(
-                "Hey my name is john",
-                functions=[Function.from_function(say_hey)],
-                function_call={"name": "INVALID_NAME_SHOULD_BE_SAY_HEY"},
-            )
-
-    def test_warning_for_disabling_function_call_with_functions(
-        self, config: ConfigTests
-    ) -> None:
-        """Make sure the user is warned when he provides functions but disables function call."""
-        chat = Chat(
-            providers=[
-                ChatgptProvider(
-                    api_key=config["OPENAI_API_KEY"],
-                    model="gpt-3.5-turbo-0613",
-                    temperature=0,
-                )
-            ]
-        )
-
-        with pytest.warns():
-            chat.completion(
-                "Hey my name is john",
-                functions=[Function.from_function(say_hey)],
-                function_call=None,
-            )
 
 
 class TestFunctionInvoke:
@@ -291,10 +263,10 @@ class TestFunctionInvoke:
             ]
         )
 
-        response = chat.completion(
+        response = chat.completion_with_functions(
             "Hey my name is john",
             functions=[Function.from_function(say_hey)],
-            function_call={"name": "say_hey"},
+            require_function_call=True,
         )
         assert isinstance(response, str)
         assert response.lower() == "hello john"
@@ -380,3 +352,106 @@ class TestFunctionInvoke:
                 FunctionInvocation(name="func", arguments={"a": "test"}),
                 functions=[Function.from_function(func)],
             )
+
+    def test_multiple_functions(self, config: ConfigTests) -> None:
+        """Test multiple functions in the same invocation."""
+        chat = Chat(
+            providers=[
+                ChatgptProvider(
+                    api_key=config["OPENAI_API_KEY"], model="gpt-3.5-turbo-0613"
+                )
+            ]
+        )
+
+        chat.completion_with_functions(
+            "Hey my name is john",
+            functions=[
+                Function.from_function(say_hey),
+                Function.from_function(get_weather),
+                Function.from_function(get_random_number),
+            ],
+        )
+
+    def test_missing_function_invocation_for_required(
+        self, mocker: MockerFixture
+    ) -> None:
+        """Test a function call with invalid arguments."""
+        chat = Chat(
+            providers=[ChatgptProvider(api_key="sk-123", model="gpt-3.5-turbo-0613")]
+        )
+
+        mocker.patch(
+            "openai.ChatCompletion.create",
+            return_value={
+                "id": "chatcmpl-123",
+                "object": "chat.completion",
+                "created": 1677652288,
+                "model": "gpt-3.5-turbo-0613",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "this is some invalid function invocation content",
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 9,
+                    "completion_tokens": 12,
+                    "total_tokens": 21,
+                },
+            },
+        )
+
+        with pytest.raises(InvalidResponseError) as err:
+            chat.completion_with_functions(
+                "doesnt matter it is mocked",
+                functions=[Function.from_function(say_hey)],
+                require_function_call=True,
+            )
+
+        # Make sure it was triggered from the function auto fixer catching ValueError in the verification
+        assert isinstance(err.value.__cause__, ValueError)
+
+    def test_invalid_function_invocation(self, mocker: MockerFixture) -> None:
+        """Test that the function invocation is invalid."""
+        chat = Chat(
+            providers=[ChatgptProvider(api_key="sk-123", model="gpt-3.5-turbo-0613")]
+        )
+
+        mocker.patch(
+            "openai.ChatCompletion.create",
+            return_value={
+                "id": "chatcmpl-123",
+                "object": "chat.completion",
+                "created": 1677652288,
+                "model": "gpt-3.5-turbo-0613",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": '{"name": "INVALID_FUNCTION_NAME", "arguments": {"name": "john"}}',
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 9,
+                    "completion_tokens": 12,
+                    "total_tokens": 21,
+                },
+            },
+        )
+
+        with pytest.raises(InvalidResponseError) as err:
+            chat.completion_with_functions(
+                "doesnt matter it is mocked",
+                functions=[Function.from_function(say_hey)],
+                require_function_call=True,
+            )
+
+        # Make sure it was triggered from the function auto fixer catching ValueError in the verification
+        assert isinstance(err.value.__cause__, InvalidFunctionCallResponseError)
