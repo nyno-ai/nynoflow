@@ -30,7 +30,7 @@ def mock_openai_chatgpt(mocker: MockerFixture) -> None:
     mocker.patch("openai.ChatCompletion.create", return_value=chatgpt_response)
 
     # Avoid downloading the model file
-    mocker.patch.object(GPT4All, "__init__", lambda x, y: None)
+    mocker.patch.object(GPT4All, "__init__", lambda *args, **kwargs: None)
     # Mock the generated content
     mocker.patch.object(GPT4All, "generate", return_value="Paris")
 
@@ -50,17 +50,21 @@ class Gpt4AllTokenizerOrcaMini3B(BaseTokenizer):
 class TestChat:
     """Test the Chat class."""
 
-    gpt4all_tokenizer: Gpt4AllTokenizerOrcaMini3B = Gpt4AllTokenizerOrcaMini3B()
-    gpt4all_provider = Gpt4AllProvider(
-        model_name="orca-mini-3b.ggmlv3.q4_0.bin",
-        allow_download=True,
-        tokenizer=gpt4all_tokenizer,
-        token_limit=400,  # It is actually 1024 but to save some compute time we use 400
-    )
-    chatgpt_provider = ChatgptProvider(
-        api_key="sk-123",
-        model="gpt-3.5-turbo-0613",
-    )
+    def setup_method(self) -> None:
+        """Setup the test methods.."""
+        self.gpt4all_tokenizer: Gpt4AllTokenizerOrcaMini3B = (
+            Gpt4AllTokenizerOrcaMini3B()
+        )
+        self.gpt4all_provider = Gpt4AllProvider(
+            model_name="orca-mini-3b.ggmlv3.q4_0.bin",
+            allow_download=True,
+            tokenizer=self.gpt4all_tokenizer,
+            token_limit=400,  # It is actually 1024 but to save some compute time we use 400
+        )
+        self.chatgpt_provider = ChatgptProvider(
+            api_key="sk-123",
+            model="gpt-3.5-turbo-0613",
+        )
 
     def test_mutli_provider(self) -> None:
         """This is a test for the chatgpt function."""
