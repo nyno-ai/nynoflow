@@ -1,15 +1,17 @@
 import json
-from copy import deepcopy
-from typing import Any, Callable, Type, TypeVar, Union
+from typing import Any, Callable, Type, Union
+from uuid import uuid4
 from warnings import warn
 
-from attrs import define, field
-from pydantic import BaseModel, Json
+from attrs import Factory, define, field
 
-from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
-from nynoflow.chats._gpt4all._gpt4all import Gpt4AllProvider
-from nynoflow.chats.chat_objects import ChatMessage, ChatMessageHistory
-from nynoflow.chats.function import Function
+from nynoflow.chats import (
+    AutoFixerType,
+    ChatMessage,
+    ChatProvider,
+    FunctionInvocation,
+    OutputFormatterType,
+)
 from nynoflow.exceptions import (
     InvalidFunctionCallResponseError,
     InvalidProvidersError,
@@ -18,44 +20,38 @@ from nynoflow.exceptions import (
     ProviderNotFoundError,
     ServiceUnavailableError,
 )
-from nynoflow.utils.templates.render_templates import (
+from nynoflow.function import Function
+from nynoflow.memory import EphermalMemory, MemoryProviders
+from nynoflow.templates import (
     render_optional_functions,
     render_output_formatter,
     render_required_functions,
 )
 
 
-OutputFormatterType = TypeVar("OutputFormatterType", bound=BaseModel)
-AutoFixerType = TypeVar("AutoFixerType", bound=Any)
-ChatProviderType = Union[ChatgptProvider, Gpt4AllProvider]
-
-
-class FunctionInvocation(BaseModel):
-    """Function invocation object."""
-
-    name: str
-    arguments: Union[dict[str, Any], Json[dict[str, Any]]]
-
-
 @define
-class Chat:
+class Flow:
     """Abstraction class above the different chat providers.
 
     Args:
-        providers (list[ChatProviderType]): The chat providers to use.
+        providers (list[ChatProvider]): The chat providers to use.
     """
 
-    providers: list[ChatProviderType] = field()
+    providers: list[ChatProvider] = field()
+    chat_id: str = field(factory=lambda: str(uuid4))
+    memory_provider: MemoryProviders = Factory(
+        lambda self: EphermalMemory(chat_id=self.chat_id), takes_self=True
+    )
 
     @providers.validator
     def _validate_providers(
         self,
-        # Have to use Any because if we use the correct type (Attribute[list[ChatProviderType]])
+        # Have to use Any because if we use the correct type (Attribute[list[ChatProvider]])
         # we get 'type' object is not subscriptable. It isn't too important because the attribute
         # variable in the function is unused and it's an internal function. See more here:
         # https://github.com/python-attrs/attrs/issues/524
         attribute: Any,
-        value: list[ChatProviderType],
+        value: list[ChatProvider],
     ) -> None:
         """Validate that at least one provider exists and that all providers have a unique provider_id.
 
@@ -75,8 +71,6 @@ class Chat:
             raise InvalidProvidersError(
                 "All chat providers must have a unique provider_id."
             )
-
-    _message_history: ChatMessageHistory = field(factory=ChatMessageHistory)
 
     def completion_with_functions(
         self,
@@ -229,16 +223,37 @@ class Chat:
                 1: The return value of the auto fixer function.
         """
         current_prompt = str(prompt)
+        provider = self._get_provider(provider_id)
+
+        initial_user_message = ChatMessage(
+            provider_id=provider.provider_id,
+            content=current_prompt,
+            role="user",
+        )
+
+        self.memory_provider.insert_message(initial_user_message)
 
         for attempt in range(1, auto_fixer_retries + 2):
-            response = self.completion(
-                prompt=current_prompt,
-                provider_id=provider_id,
+            message_history_after_cutoff = (
+                self.memory_provider.get_message_history_upto_token_limit(
+                    token_limit=provider.token_limit - token_offset,
+                    tokenizer=provider.tokenizer,
+                )
+            )
+            response = self._prompt_provider_with_retry(
+                provider=provider,
+                messages=message_history_after_cutoff,
                 token_offset=token_offset,
+            )
+            assistant_message = ChatMessage(
+                provider_id=provider.provider_id,
+                content=response,
+                role="assistant",
             )
             try:
                 result = auto_fixer(response)
-                self._clean_auto_fixer_failed_attempts(failed_attempts=attempt - 1)
+                self.memory_provider.insert_message(assistant_message)
+                self.memory_provider.clean_temporary_message_history()
                 return response, result
             except InvalidResponseError as err:
                 last_exception: InvalidResponseError = err
@@ -246,28 +261,10 @@ class Chat:
                     f"Failed to fix response {response} due to error {err}. Retrying. Attempt number {attempt}"
                 )
                 current_prompt = str(err)
+                assistant_message.temporary = True
+                self.memory_provider.insert_message(assistant_message)
 
         raise InvalidResponseError from last_exception.__cause__
-
-    def _clean_auto_fixer_failed_attempts(self, failed_attempts: int) -> None:
-        """Clean the message history from the failed attempts of the auto fixer.
-
-        The algorithm is to keep the last message which is the valid response from the
-        model, and the first message the user prompted before all the attempts.
-
-        Args:
-            failed_attempts (int): The number of failed attempts before succeeding.
-        """
-        last_message = self._message_history[-1]
-
-        # failed attempts * 2 because each attempt is 2 messages, one for user and one for assistant.
-        messages_until_user_prompt = self._message_history[
-            : len(self._message_history) - failed_attempts * 2 - 1
-        ]
-
-        self._message_history = ChatMessageHistory(
-            messages_until_user_prompt + [last_message]
-        )
 
     def completion(
         self,
@@ -291,16 +288,18 @@ class Chat:
         provider = self._get_provider(provider_id)
 
         user_message = ChatMessage(
-            {
-                "provider_id": provider.provider_id,
-                "content": prompt,
-                "role": "user",
-            }
+            provider_id=provider.provider_id,
+            content=prompt,
+            role="user",
         )
-        self._message_history.append(user_message)
-        message_history_after_cutoff = self._cutoff_message_history(
-            provider, token_offset
+        self.memory_provider.insert_message(user_message)
+        message_history_after_cutoff = (
+            self.memory_provider.get_message_history_upto_token_limit(
+                token_limit=provider.token_limit - token_offset,
+                tokenizer=provider.tokenizer,
+            )
         )
+
         try:
             completion: str = self._prompt_provider_with_retry(
                 provider=provider,
@@ -308,24 +307,20 @@ class Chat:
                 token_offset=token_offset,
             )
             assistant_message = ChatMessage(
-                {
-                    "provider_id": provider.provider_id,
-                    "content": completion,
-                    "role": "assistant",
-                }
+                provider_id=provider.provider_id, content=completion, role="assistant"
             )
-            self._message_history.append(assistant_message)
+            self.memory_provider.insert_message(assistant_message)
             return completion
 
         except Exception as err:
             # Cleanup user message in case unexpected error occurs
-            self._message_history.remove(user_message)
+            self.memory_provider.remove_message(user_message)
             raise err
 
     def _prompt_provider_with_retry(
         self,
-        provider: ChatProviderType,
-        messages: ChatMessageHistory,
+        provider: ChatProvider,
+        messages: list[ChatMessage],
         token_offset: int,
     ) -> str:
         """Prompt a provider with retries for service unavailable errors.
@@ -334,8 +329,8 @@ class Chat:
             ServiceUnavailableError: If the provider is unavailable after the retries.
 
         Args:
-            provider (ChatProviderType): The provider to use.
-            messages (ChatMessageHistory): The message history to use for the prompt.
+            provider (ChatProvider): The provider to use.
+            messages (list[ChatMessage]): The message history to use for the prompt.
             token_offset (int): The minimum number of tokens to offset for the response.
 
         Returns:
@@ -380,27 +375,7 @@ class Chat:
         response = func.invoke(**function_invocation.arguments)
         return response
 
-    def _cutoff_message_history(
-        self, provider: ChatProviderType, token_offset: int
-    ) -> ChatMessageHistory:
-        """Cutoff message history starting from the last message to make sure we have enough tokens for the answer.
-
-        Args:
-            provider (ChatProviderType): The provider to use.
-            token_offset (int): The minimum number of tokens to offset for the response.
-
-        Returns:
-            ChatMessageHistory: The cutoff message history.
-        """
-        message_history = deepcopy(self._message_history)
-        while (
-            provider.token_limit - provider._num_tokens(message_history) < token_offset
-        ):
-            message_history.pop(0)
-
-        return message_history
-
-    def _get_provider(self, provider_id: Union[str, None]) -> ChatProviderType:
+    def _get_provider(self, provider_id: Union[str, None]) -> ChatProvider:
         """Get a provider by its provider_id. If no provider_id is provided and there is only one provider, return it.
 
         Args:
@@ -433,4 +408,4 @@ class Chat:
         Returns:
             str: The string representation of the chat. Each message is on a new line with the role and the content printed.
         """
-        return str(self._message_history)
+        return "\n".join([str(msg) for msg in self.memory_provider.message_history])

@@ -5,20 +5,20 @@ from openai.error import ServiceUnavailableError as OpenaiServiceUnavailableErro
 from pytest_mock import MockerFixture
 from transformers import AutoTokenizer  # type: ignore
 
-from nynoflow.chats import Chat
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
 from nynoflow.chats._chatgpt._chatgpt_objects import ChatgptResponse
 from nynoflow.chats._gpt4all._gpt4all import Gpt4AllProvider
-from nynoflow.chats.chat_objects import ChatMessageHistory
+from nynoflow.chats.chat_objects import ChatMessage
 from nynoflow.exceptions import (
     InvalidProvidersError,
     ProviderMissingInCompletionError,
     ProviderNotFoundError,
     ServiceUnavailableError,
 )
+from nynoflow.flow import Flow
+from nynoflow.tokenizers import BaseTokenizer
 from nynoflow.util import logger
-from nynoflow.utils.tokenizers.base_tokenizer import BaseTokenizer
-from tests.chat.helpers import render_chatgpt_response
+from tests.helpers import render_chatgpt_response
 
 
 chatgpt_response: ChatgptResponse = render_chatgpt_response("Paris")
@@ -68,22 +68,22 @@ class TestChat:
 
     def test_mutli_provider(self) -> None:
         """This is a test for the chatgpt function."""
-        chat = Chat(providers=[self.chatgpt_provider, self.gpt4all_provider])
+        flow = Flow(providers=[self.chatgpt_provider, self.gpt4all_provider])
 
         # Make sure no exception is raised when calling the completion function
-        chat.completion(prompt="What is the captial of france?", provider_id="chatgpt")
-        chat.completion(prompt="What is the captial of italy?", provider_id="gpt4all")
-        logger.debug(chat)
+        flow.completion(prompt="What is the captial of france?", provider_id="chatgpt")
+        flow.completion(prompt="What is the captial of italy?", provider_id="gpt4all")
+        logger.debug(flow)
 
     def test_zero_providers(self) -> None:
         """Expect to fail without any providers."""
         with pytest.raises(InvalidProvidersError):
-            Chat(providers=[])
+            Flow(providers=[])
 
     def test_multiple_providers(self) -> None:
         """Expect to fail with multiple providers with the same id."""
         with pytest.raises(InvalidProvidersError):
-            Chat(
+            Flow(
                 providers=[
                     ChatgptProvider(
                         provider_id="chatgpt",
@@ -101,7 +101,7 @@ class TestChat:
     def test_chat_request_with_invalid_provider_id(self) -> None:
         """Expect to fail with an invalid provider id."""
         with pytest.raises(ProviderNotFoundError):
-            Chat(providers=[self.chatgpt_provider]).completion(
+            Flow(providers=[self.chatgpt_provider]).completion(
                 provider_id="invalid",
                 prompt="What is the captial of france?",
             )
@@ -109,48 +109,48 @@ class TestChat:
     def test_chat_request_without_provider_id(self) -> None:
         """Expect to fail with a request to provide a provider id."""
         with pytest.raises(ProviderMissingInCompletionError):
-            Chat(providers=[self.chatgpt_provider, self.gpt4all_provider]).completion(
+            Flow(providers=[self.chatgpt_provider, self.gpt4all_provider]).completion(
                 "What is the captial of france?"
             )
 
     def test_chat_request_with_valid_provider_id(self) -> None:
         """Expect to succeed with valid provider id or without provider id for one provider."""
-        chat = Chat(providers=[self.chatgpt_provider])
-        chat.completion("What is the captial of france?")
-        chat.completion(
+        flow = Flow(providers=[self.chatgpt_provider])
+        flow.completion("What is the captial of france?")
+        flow.completion(
             provider_id="chatgpt",
             prompt="What is the captial of france?",
         )
 
     def test_message_cutoff(self) -> None:
         """Make sure that old messages are cutoff."""
-        chat = Chat(providers=[self.gpt4all_provider])
+        flow = Flow(providers=[self.gpt4all_provider])
 
         # Generate a long list of messages
-        messages_before_cutoff = ChatMessageHistory(
+        messages_before_cutoff = list[ChatMessage](
             [
-                {
-                    "provider_id": "gpt4all",
-                    "role": "user",
-                    "content": "What is the captial of italy?",
-                },
-                {
-                    "provider_id": "gpt4all",
-                    "role": "assistant",
-                    "content": "Rome. But it is widely known that the capital of Italy is Milan.",
-                },
+                ChatMessage(
+                    provider_id="gpt4all",
+                    role="user",
+                    content="What is the captial of italy?",
+                ),
+                ChatMessage(
+                    provider_id="gpt4all",
+                    role="assistant",
+                    content="Rome. But it is widely known that the capital of Italy is Milan.",
+                ),
             ]
             * 100
         )
 
-        chat._message_history.extend(messages_before_cutoff[:])
+        flow.memory_provider.insert_message_batch(messages_before_cutoff[:])
 
         # Basically assert that no exception is raised due to the message cutoff
-        chat.completion("What is the captical of france?", token_offset=16)
+        flow.completion("What is the captical of france?", token_offset=16)
 
     def test_chatgpt_provider_custom_token_limit(self) -> None:
         """Make sure that settings a custom token limit for chatgpt provider works."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     provider_id="chatgpt",
@@ -160,11 +160,11 @@ class TestChat:
                 )
             ]
         )
-        chat.completion("Hello World!")
+        flow.completion("Hello World!")
 
     def test_service_unavailable_retries_success(self, mocker: MockerFixture) -> None:
         """Test the service unavailable retries succeed after multiple tries."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     provider_id="chatgpt",
@@ -186,11 +186,11 @@ class TestChat:
         )
 
         # Will succeed the third time
-        assert chat.completion("What is the captical of france?") == "Paris"
+        assert flow.completion("What is the captical of france?") == "Paris"
 
     def test_service_unavailable_retries_failure(self, mocker: MockerFixture) -> None:
         """Test the service unavailable error with the chatgpt provider."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     model="gpt-3.5-turbo-0613",
@@ -205,4 +205,4 @@ class TestChat:
         )
 
         with pytest.raises(ServiceUnavailableError):
-            chat.completion("What is the captical of france?")
+            flow.completion("What is the captical of france?")

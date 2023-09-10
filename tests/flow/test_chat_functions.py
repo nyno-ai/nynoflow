@@ -4,10 +4,7 @@ import pytest
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
-from nynoflow.chats import Chat
-from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
-from nynoflow.chats.chat import FunctionInvocation
-from nynoflow.chats.function import Function
+from nynoflow.chats import ChatgptProvider, FunctionInvocation
 from nynoflow.exceptions import (
     InvalidFunctionCallResponseError,
     InvalidResponseError,
@@ -15,6 +12,8 @@ from nynoflow.exceptions import (
     MissingDocstringError,
     MissingTypeHintsError,
 )
+from nynoflow.flow import Flow
+from nynoflow.function import Function
 from tests.conftest import ConfigTests
 
 
@@ -60,7 +59,7 @@ class TestChatFunctions:
 
     def test_chatgpt_function(self, config: ConfigTests) -> None:
         """Test the functions of the ChatGPT provider."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -70,7 +69,7 @@ class TestChatFunctions:
             ]
         )
 
-        response = chat.completion_with_functions(
+        response = flow.completion_with_functions(
             "What is the weather in boston?",
             functions=[
                 Function(
@@ -98,7 +97,7 @@ class TestChatFunctions:
 
     def test_chatgpt_function_from_function(self, config: ConfigTests) -> None:
         """Test the functions of the ChatGPT provider."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -108,7 +107,7 @@ class TestChatFunctions:
             ]
         )
 
-        response = chat.completion_with_functions(
+        response = flow.completion_with_functions(
             "What is the weather in boston?",
             functions=[Function.from_function(get_weather)],
         )
@@ -229,7 +228,7 @@ class TestFunctionCall:
 
     def test_auto_function_call(self, config: ConfigTests) -> None:
         """Test an auto function call."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -239,7 +238,7 @@ class TestFunctionCall:
             ]
         )
 
-        response = chat.completion_with_functions(
+        response = flow.completion_with_functions(
             "Hey my name is john",
             functions=[Function.from_function(say_hey)],
             require_function_call=True,
@@ -253,7 +252,7 @@ class TestFunctionInvoke:
 
     def test_valid_function_call(self, config: ConfigTests) -> None:
         """Test a valid function call."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -263,7 +262,7 @@ class TestFunctionInvoke:
             ]
         )
 
-        response = chat.completion_with_functions(
+        response = flow.completion_with_functions(
             "Hey my name is john",
             functions=[Function.from_function(say_hey)],
             require_function_call=True,
@@ -273,7 +272,7 @@ class TestFunctionInvoke:
 
     def test_invalid_function_name(self, config: ConfigTests) -> None:
         """Test an invalid function call name in the LLM response."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -284,7 +283,7 @@ class TestFunctionInvoke:
         )
 
         with pytest.raises(InvalidFunctionCallResponseError):
-            chat._invoke_function(
+            flow._invoke_function(
                 FunctionInvocation(
                     name="INVALID_FUNCTION_NAME",
                     arguments={"name": "valid_argument"},
@@ -294,7 +293,7 @@ class TestFunctionInvoke:
 
     def test_missing_arguments(self, config: ConfigTests) -> None:
         """Test a function call with missing arguments."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -305,14 +304,14 @@ class TestFunctionInvoke:
         )
 
         with pytest.raises(InvalidFunctionCallResponseError):
-            chat._invoke_function(
+            flow._invoke_function(
                 FunctionInvocation(name="say_hey", arguments={}),
                 functions=[Function.from_function(say_hey)],
             )
 
     def test_invalid_arguments(self, config: ConfigTests) -> None:
         """Test a function call with invalid arguments."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -323,14 +322,14 @@ class TestFunctionInvoke:
         )
 
         with pytest.raises(InvalidFunctionCallResponseError):
-            chat._invoke_function(
+            flow._invoke_function(
                 FunctionInvocation(name="say_hey", arguments={"name": 123}),
                 functions=[Function.from_function(say_hey)],
             )
 
     def test_function_error(self, config: ConfigTests) -> None:
         """Test a function call with invalid arguments."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -348,14 +347,14 @@ class TestFunctionInvoke:
             raise MyError("This is a test error")
 
         with pytest.raises(MyError):
-            chat._invoke_function(
+            flow._invoke_function(
                 FunctionInvocation(name="func", arguments={"a": "test"}),
                 functions=[Function.from_function(func)],
             )
 
     def test_multiple_functions(self, config: ConfigTests) -> None:
         """Test multiple functions in the same invocation."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"], model="gpt-3.5-turbo-0613"
@@ -363,7 +362,7 @@ class TestFunctionInvoke:
             ]
         )
 
-        chat.completion_with_functions(
+        flow.completion_with_functions(
             "Hey my name is john",
             functions=[
                 Function.from_function(say_hey),
@@ -376,7 +375,7 @@ class TestFunctionInvoke:
         self, mocker: MockerFixture
     ) -> None:
         """Test a function call with invalid arguments."""
-        chat = Chat(
+        flow = Flow(
             providers=[ChatgptProvider(api_key="sk-123", model="gpt-3.5-turbo-0613")]
         )
 
@@ -384,7 +383,7 @@ class TestFunctionInvoke:
             "openai.ChatCompletion.create",
             return_value={
                 "id": "chatcmpl-123",
-                "object": "chat.completion",
+                "object": "flow.completion",
                 "created": 1677652288,
                 "model": "gpt-3.5-turbo-0613",
                 "choices": [
@@ -406,7 +405,7 @@ class TestFunctionInvoke:
         )
 
         with pytest.raises(InvalidResponseError) as err:
-            chat.completion_with_functions(
+            flow.completion_with_functions(
                 "doesnt matter it is mocked",
                 functions=[Function.from_function(say_hey)],
                 require_function_call=True,
@@ -417,7 +416,7 @@ class TestFunctionInvoke:
 
     def test_invalid_function_invocation(self, mocker: MockerFixture) -> None:
         """Test that the function invocation is invalid."""
-        chat = Chat(
+        flow = Flow(
             providers=[ChatgptProvider(api_key="sk-123", model="gpt-3.5-turbo-0613")]
         )
 
@@ -425,7 +424,7 @@ class TestFunctionInvoke:
             "openai.ChatCompletion.create",
             return_value={
                 "id": "chatcmpl-123",
-                "object": "chat.completion",
+                "object": "flow.completion",
                 "created": 1677652288,
                 "model": "gpt-3.5-turbo-0613",
                 "choices": [
@@ -447,7 +446,7 @@ class TestFunctionInvoke:
         )
 
         with pytest.raises(InvalidResponseError) as err:
-            chat.completion_with_functions(
+            flow.completion_with_functions(
                 "doesnt matter it is mocked",
                 functions=[Function.from_function(say_hey)],
                 require_function_call=True,

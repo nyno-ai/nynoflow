@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from nynoflow.chats import Chat
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
+from nynoflow.flow import Flow
 from tests.conftest import ConfigTests
 
 
@@ -10,7 +10,7 @@ class TestChatNoMocks:
 
     def test_output_formatter(self, config: ConfigTests) -> None:
         """Test the output formatter to make sure the output is as expected."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key=config["OPENAI_API_KEY"],
@@ -26,7 +26,7 @@ class TestChatNoMocks:
             first_name: str
             last_name: str
 
-        output = chat.completion_with_output_formatter(
+        output = flow.completion_with_output_formatter(
             "My friend name is john lennon.", output_format=Person
         )
         assert output

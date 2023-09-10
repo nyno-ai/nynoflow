@@ -3,11 +3,11 @@ from warnings import warn
 import tiktoken
 from attrs import define, field
 
-from nynoflow.chats._chatgpt._chatgpt_objects import ChatgptMessageHistory
+from nynoflow.chats.chat_objects import ChatMessage
 
 
 @define
-class ChatgptTiktokenTokenizer:
+class OpenAITokenizer:
     """Tokenizer for ChatGPT using TikToken.
 
     Args:
@@ -39,40 +39,49 @@ class ChatgptTiktokenTokenizer:
             self._tokens_per_message = 3
             self._tokens_per_name = 1
 
-    def _calculate_messages_tokens(self, messages: ChatgptMessageHistory) -> int:
+    def _calculate_messages_tokens(self, messages: list[ChatMessage]) -> int:
         """Return the number of tokens used by a list of messages.
 
         Args:
-            messages (ChatgptMessageHistory): The messages to count the tokens of.
+            messages (list[ChatMessage]): The messages to count the tokens of.
 
         Returns:
             int: The number of tokens used by the messages.
         """
         token_count = 0
         for message in messages:
-            message_tokens = self._tokens_per_message
-
-            for key, value in message.items():
-                message_tokens += len(self._encoding.encode(str(value)))
-                if key == "name":
-                    message_tokens += self._tokens_per_name
+            message_tokens = (
+                self._tokens_per_message
+                + len(self._encoding.encode(str(message.content)))
+                + len(self._encoding.encode(str(message.role)))
+            )
             token_count += message_tokens
-
         token_count += 3  # every reply is primed with <|start|>assistant<|message|>
         return token_count
 
     def token_count(
         self,
-        messages: ChatgptMessageHistory,
+        messages: list[ChatMessage],
     ) -> int:
         """Return the number of tokens used by a list of messages and functions.
 
         Args:
-            messages (ChatgptMessageHistory): The messages to count the tokens of.
+            messages (list[ChatMessage]): The messages to count the tokens of.
 
         Returns:
             int: The number of tokens used by the messages.
         """
+        # chatgpt_message_history = ChatgptMessageHistory(
+        #     [
+        #         ChatgptRequestMessage(
+        #             role=msg.role,
+        #             name=None,
+        #             content=msg.content,
+        #         )
+        #         for msg in messages
+        #     ]
+        # )
+
         token_count = self._calculate_messages_tokens(messages)
 
         return token_count

@@ -1,11 +1,11 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from nynoflow.chats import Chat
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
-from nynoflow.chats.chat_objects import ChatMessageHistory
+from nynoflow.chats.chat_objects import ChatMessage
 from nynoflow.exceptions import InvalidResponseError
-from tests.chat.helpers import render_chatgpt_response
+from nynoflow.flow import Flow
+from tests.helpers import render_chatgpt_response
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +26,7 @@ class TestChatAutoFixer:
 
     def test_auto_fixer(self, mocker: MockerFixture) -> None:
         """Test the auto fixer. We can't patch the completion method because it is a read only attribute."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     model="gpt-3.5-turbo-0613",
@@ -47,19 +47,22 @@ class TestChatAutoFixer:
 
             return result
 
-        llm_response, function_output = chat.completion_with_auto_fixer(
+        llm_response, function_output = flow.completion_with_auto_fixer(
             "What is the captical of france?",
             auto_fixer=my_auto_fixer,
             auto_fixer_retries=4,
         )
 
         assert function_output == result
-        assert chat._message_history[0]["content"] == "What is the captical of france?"
-        assert chat._message_history[1]["content"] == result
+        assert (
+            flow.memory_provider.message_history[0].content
+            == "What is the captical of france?"
+        )
+        assert flow.memory_provider.message_history[1].content == result
 
     def test_history_cleaner(self) -> None:
         """Make sure the history cleaner works as intended."""
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     model="gpt-3.5-turbo-0613",
@@ -68,50 +71,54 @@ class TestChatAutoFixer:
             ]
         )
 
-        chat._message_history = ChatMessageHistory(
+        flow.memory_provider.message_history = list[ChatMessage](
             [
-                {
-                    "provider_id": "chatgpt",
-                    "role": "user",
-                    "content": "What is the captial of italy?",
-                },
+                ChatMessage(
+                    provider_id="chatgpt",
+                    role="user",
+                    content="What is the captial of italy?",
+                ),
                 # Deleting Start
-                {
-                    "provider_id": "chatgpt",
-                    "role": "assistant",
-                    "content": "Paris",
-                },
-                {
-                    "provider_id": "chatgpt",
-                    "role": "user",
-                    "content": "This is incorrect. What is the captical of italy?",
-                },
-                {
-                    "provider_id": "chatgpt",
-                    "role": "assistant",
-                    "content": "Paris",
-                },
-                {
-                    "provider_id": "chatgpt",
-                    "role": "user",
-                    "content": "This is incorrect. What is the captical of italy?",
-                },
+                ChatMessage(
+                    provider_id="chatgpt",
+                    role="assistant",
+                    content="Paris",
+                    temporary=True,
+                ),
+                ChatMessage(
+                    provider_id="chatgpt",
+                    role="user",
+                    content="This is incorrect. What is the captical of italy?",
+                    temporary=True,
+                ),
+                ChatMessage(
+                    provider_id="chatgpt",
+                    role="assistant",
+                    content="Paris",
+                    temporary=True,
+                ),
+                ChatMessage(
+                    provider_id="chatgpt",
+                    role="user",
+                    content="This is incorrect. What is the captical of italy?",
+                    temporary=True,
+                ),
                 # Deletion End
-                {
-                    "provider_id": "chatgpt",
-                    "role": "assistant",
-                    "content": "Rome.",
-                },
+                ChatMessage(
+                    provider_id="chatgpt",
+                    role="assistant",
+                    content="Rome.",
+                ),
             ]
         )
-        attempts = 3
-        chat._clean_auto_fixer_failed_attempts(
-            failed_attempts=attempts - 1
-        )  # Calculate the failed attempts
+        flow.memory_provider.clean_temporary_message_history()
 
-        assert len(chat._message_history) == 2
-        assert chat._message_history[0]["content"] == "What is the captial of italy?"
-        assert chat._message_history[1]["content"] == "Rome."
+        assert len(flow.memory_provider.message_history) == 2
+        assert (
+            flow.memory_provider.message_history[0].content
+            == "What is the captial of italy?"
+        )
+        assert flow.memory_provider.message_history[1].content == "Rome."
 
     def test_auto_fixer_failure(self) -> None:
         """Test that the auto fixer fails after too many failures."""
@@ -119,7 +126,7 @@ class TestChatAutoFixer:
         def my_invalid_auto_fixer(response: str) -> str:
             raise InvalidResponseError("Please do this fix and that fix")
 
-        chat = Chat(
+        flow = Flow(
             providers=[
                 ChatgptProvider(
                     model="gpt-3.5-turbo-0613",
@@ -128,7 +135,7 @@ class TestChatAutoFixer:
             ]
         )
         with pytest.raises(InvalidResponseError):
-            chat.completion_with_auto_fixer(
+            flow.completion_with_auto_fixer(
                 "What is the captical of france?",
                 auto_fixer=my_invalid_auto_fixer,
                 auto_fixer_retries=2,

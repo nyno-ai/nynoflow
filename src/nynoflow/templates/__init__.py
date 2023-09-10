@@ -3,7 +3,7 @@ from typing import Any
 
 from jinja2 import Template
 
-from nynoflow.chats.function import Function
+from nynoflow.function import Function
 
 
 def read_template(template_name: str) -> Template:
