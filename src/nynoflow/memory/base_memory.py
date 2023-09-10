@@ -12,12 +12,15 @@ class BaseMemory(ABC):
 
     Attributes:
         chat_id (str): The chat id.
+        persist (bool): Whether to persist the memory or not after each run. If False, the memory will be
+                        deleted when the flow is finished.
         message_history (list[ChatMessage]): The message history. Stored in memory and backend.
         temporary_message_history (list[ChatMessage]): The temporary message history. Stored in memory only and used
                                                    for temporary messages like fixing messages.
     """
 
     chat_id: str = field()
+    persist: bool = field(default=True)
 
     message_history: list[ChatMessage] = field(factory=list[ChatMessage])
 
@@ -103,3 +106,12 @@ class BaseMemory(ABC):
         for msg in self.message_history[:]:
             if msg.temporary:
                 self.remove_message(msg)
+
+    @abstractmethod
+    def cleanup(self) -> None:
+        """Cleanup the memory. Called when the memory instance is deleted."""
+
+    def __del__(self) -> None:
+        """Delete the memory if persist is False."""
+        if not self.persist:
+            self.cleanup()

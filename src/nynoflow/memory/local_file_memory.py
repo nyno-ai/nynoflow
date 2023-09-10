@@ -91,3 +91,7 @@ class LocalFileMemory(BaseMemory):
 
         with open(self.file_path, "w") as f:
             json.dump(cattrs.unstructure(data), f)
+
+    def cleanup(self) -> None:
+        """Remove the memory file."""
+        os.remove(self.file_path)

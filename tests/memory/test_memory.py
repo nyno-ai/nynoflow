@@ -11,7 +11,7 @@ class TestMemory:
 
     def test_local_file_memory_basic_operations(self) -> None:
         """Test the local file memory."""
-        memory = LocalFileMemory(chat_id=str(uuid4()))
+        memory = LocalFileMemory(chat_id=str(uuid4()), persist=False)
         msg0 = ChatMessage(
             provider_id="chatgpt",
             role="user",
@@ -88,11 +88,27 @@ class TestMemory:
         memory.remove_message(memory.message_history[0])
 
         del memory
-        memory = LocalFileMemory(chat_id=chat_id)
+        memory = LocalFileMemory(chat_id=chat_id, persist=False)
         assert len(memory.message_history) == 3
 
     def test_custom_filepath(self) -> None:
         """Test using the memory with a custom path."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            filepath = os.path.join(temp_dir, "memory.json")
+            memory = LocalFileMemory(
+                chat_id=str(uuid4()), file_path=filepath, persist=False
+            )
+            msg0 = ChatMessage(
+                provider_id="chatgpt",
+                role="user",
+                content="What is the captial of italy?",
+            )
+            memory.insert_message(msg0)
+            assert os.path.exists(filepath)
+            assert len(memory.message_history) == 1
+
+    def test_persistence_and_cleanup(self) -> None:
+        """Test persistence and cleanup."""
         with tempfile.TemporaryDirectory() as temp_dir:
             filepath = os.path.join(temp_dir, "memory.json")
             memory = LocalFileMemory(chat_id=str(uuid4()), file_path=filepath)
@@ -104,3 +120,10 @@ class TestMemory:
             memory.insert_message(msg0)
             assert os.path.exists(filepath)
             assert len(memory.message_history) == 1
+            del memory
+            assert os.path.exists(filepath)
+
+            memory = LocalFileMemory(chat_id=str(uuid4()), file_path=filepath)
+            assert len(memory.message_history) == 1
+            memory.cleanup()
+            assert not os.path.exists(filepath)
