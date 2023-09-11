@@ -24,3 +24,6 @@ class EphermalMemory(BaseMemory):
         Args:
             msg (ChatMessage): The message to remove.
         """
+
+    def cleanup(self) -> None:
+        """Cleanup the memory. Not relevant because this memory is ephermal."""

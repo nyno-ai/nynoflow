@@ -1,17 +1,31 @@
-import os
-import tempfile
-from uuid import uuid4
+"""This module is named without "test" prefix so pytest does not try to run it as a test.
+
+This module contains a base class for testing file based memory providers.
+It does not contain any tests itself that should run on its own.
+"""
+
+from abc import ABC, abstractmethod
+from typing import TypeVar
 
 from nynoflow.chats.chat_objects import ChatMessage
-from nynoflow.memory import LocalFileMemory
+from nynoflow.memory import MemoryProviders
 
 
-class TestMemory:
-    """Test memory implementations."""
+MemoryProviderType = TypeVar("MemoryProviderType", bound=MemoryProviders)
 
-    def test_local_file_memory_basic_operations(self) -> None:
+
+class BaseFileMemoryTest(ABC):
+    """Generic test class for all file based memory providers."""
+
+    @abstractmethod
+    def is_memory_file_exists(self, memory: MemoryProviderType) -> bool:
+        """Check if the memory file exists."""
+
+    def test_local_file_memory_basic_operations(
+        self, memory: MemoryProviderType
+    ) -> None:
         """Test the local file memory."""
-        memory = LocalFileMemory(chat_id=str(uuid4()), persist=False)
+        print(memory.chat_id)
         msg0 = ChatMessage(
             provider_id="chatgpt",
             role="user",
@@ -42,10 +56,9 @@ class TestMemory:
         assert memory.message_history[0] == msg0
         assert memory.message_history[1] == msg2
 
-    def test_local_file_memory_load(self) -> None:
+    def test_local_file_memory_load(self, memory: MemoryProviderType) -> None:
         """Test the local file memory."""
-        chat_id = str(uuid4())
-        memory = LocalFileMemory(chat_id=chat_id)
+        print(memory.chat_id)
         memory.insert_message_batch(
             [
                 ChatMessage(
@@ -61,9 +74,11 @@ class TestMemory:
             ]
         )
         assert len(memory.message_history) == 2
-        del memory
 
-        memory = LocalFileMemory(chat_id=chat_id)
+        # Reset the memory and load it again
+        memory.message_history = list[ChatMessage]()
+        memory.load_message_history()
+
         memory.insert_message_batch(
             [
                 ChatMessage(
@@ -87,43 +102,23 @@ class TestMemory:
 
         memory.remove_message(memory.message_history[0])
 
-        del memory
-        memory = LocalFileMemory(chat_id=chat_id, persist=False)
+        # Reset the memory and load it again
+        memory.message_history = list[ChatMessage]()
+        memory.load_message_history()
+
         assert len(memory.message_history) == 3
 
-    def test_custom_filepath(self) -> None:
-        """Test using the memory with a custom path."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            filepath = os.path.join(temp_dir, "memory.json")
-            memory = LocalFileMemory(
-                chat_id=str(uuid4()), file_path=filepath, persist=False
-            )
-            msg0 = ChatMessage(
-                provider_id="chatgpt",
-                role="user",
-                content="What is the captial of italy?",
-            )
-            memory.insert_message(msg0)
-            assert os.path.exists(filepath)
-            assert len(memory.message_history) == 1
-
-    def test_persistence_and_cleanup(self) -> None:
+    def test_cleanup(self, memory: MemoryProviderType) -> None:
         """Test persistence and cleanup."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            filepath = os.path.join(temp_dir, "memory.json")
-            memory = LocalFileMemory(chat_id=str(uuid4()), file_path=filepath)
-            msg0 = ChatMessage(
-                provider_id="chatgpt",
-                role="user",
-                content="What is the captial of italy?",
-            )
-            memory.insert_message(msg0)
-            assert os.path.exists(filepath)
-            assert len(memory.message_history) == 1
-            del memory
-            assert os.path.exists(filepath)
+        msg0 = ChatMessage(
+            provider_id="chatgpt",
+            role="user",
+            content="What is the captial of italy?",
+        )
+        memory.insert_message(msg0)
+        assert self.is_memory_file_exists(memory)
+        assert len(memory.message_history) == 1
 
-            memory = LocalFileMemory(chat_id=str(uuid4()), file_path=filepath)
-            assert len(memory.message_history) == 1
-            memory.cleanup()
-            assert not os.path.exists(filepath)
+        # Save configuration to check if the file exists after cleanup
+        memory.cleanup()
+        assert not self.is_memory_file_exists(memory)

@@ -24,6 +24,10 @@ class BaseMemory(ABC):
 
     message_history: list[ChatMessage] = field(factory=list[ChatMessage])
 
+    def __attrs_post_init__(self) -> None:
+        """Load the message history."""
+        self.load_message_history()
+
     def get_message_history_upto_token_limit(
         self, token_limit: int, tokenizer: Tokernizers
     ) -> list[ChatMessage]:
