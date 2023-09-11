@@ -1,5 +1,3 @@
-from typing import Optional
-
 import boto3
 from attrs import define, field
 from botocore.exceptions import ClientError
@@ -13,7 +11,6 @@ class S3Memory(BaseFileMemory):
     """Store message history in an AWS S3 bucket."""
 
     bucket_name: str = field()
-    region_name: Optional[str] = field(default=None)
     key: str = field()
 
     @key.default
@@ -24,10 +21,8 @@ class S3Memory(BaseFileMemory):
 
     @_s3_client.default
     def _s3_client_factory(self) -> S3Client:
-        """Create an S3 client, optionally specifying a region_name if it's set."""
-        if self.region_name is None:
-            return boto3.client("s3")
-        return boto3.client("s3", region_name=self.region_name)
+        """Create an S3 client."""
+        return boto3.client("s3")
 
     def _read_memory_file(self) -> str:
         """Read the memory file from S3. Raise a FileNotFoundError if the file does not exist."""

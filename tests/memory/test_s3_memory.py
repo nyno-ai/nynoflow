@@ -38,13 +38,11 @@ class TestS3Memory(BaseFileMemoryTest):
             # credentials, but needed for type checking.
             raise err  # pragma: no cover
 
-    def test_s3_client_with_region(self, config: ConfigTests) -> None:
+    def test_s3_bucket_doesnt_exist(self, config: ConfigTests) -> None:
         """Test that the S3 client is created with the correct region."""
-        region = "us-east-2"
-        memory = S3Memory(
-            chat_id=str(uuid4()),
-            bucket_name=config["AWS_S3_BUCKET_NAME"],
-            region_name=region,
-            persist=False,
-        )
-        assert region == memory.region_name
+        with pytest.raises(ClientError):
+            S3Memory(
+                chat_id=str(uuid4()),
+                bucket_name="just-invalid-bucket-name-that-doesnt-exist",
+                persist=False,
+            )

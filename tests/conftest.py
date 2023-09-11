@@ -10,6 +10,8 @@ class ConfigTests(TypedDict):
 
     OPENAI_API_KEY: str
     AWS_S3_BUCKET_NAME: str
+    GCP_BUCKET_NAME: str
+    GCP_SERVICE_ACCOUNT: str
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -25,6 +27,8 @@ def config() -> ConfigTests:
         {
             "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
             "AWS_S3_BUCKET_NAME": os.environ["AWS_S3_BUCKET_NAME"],
+            "GCP_BUCKET_NAME": os.environ["GCP_BUCKET_NAME"],
+            "GCP_SERVICE_ACCOUNT": os.environ["GCP_SERVICE_ACCOUNT"],
         }
     )
     return config

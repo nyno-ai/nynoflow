@@ -1,5 +1,5 @@
 {
-  "python.testing.pytestArgs": ["--cov", "--cov-report=xml", "--pdb", "tests"],
+  "python.testing.pytestArgs": ["--cov", "--cov-report=xml", "tests"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true
 }

@@ -31,6 +31,8 @@ jsonschema = "^4.19.0"
 cattrs = "^23.1.2"
 boto3 = "^1.28.44"
 boto3-stubs = {extras = ["s3"], version = "^1.28.44"}
+google-cloud-storage = "^2.10.0"
+types-google-cloud-ndb = "^2.2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 Pygments = "^2.16.1"
@@ -64,6 +66,7 @@ sentencepiece = "^0.1.99"
 transformers = "^4.32.1"
 protobuf = "^4.24.2"
 pytest-cov = "^4.1.0"
+types-google-cloud-ndb = "^2.2.0.0"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
