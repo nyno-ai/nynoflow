@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 
 from nynoflow.memory import MemoryProviders, S3Memory
 from tests.conftest import ConfigTests
-from tests.memory.base_file_memory_tests import BaseFileMemoryTest
+from tests.memory.base_memory_tests import BaseMemoryTest
 
 
 @pytest.fixture(scope="function")
@@ -18,10 +18,10 @@ def memory(config: ConfigTests) -> Generator[S3Memory, None, None]:
     )
 
 
-class TestS3Memory(BaseFileMemoryTest):
+class TestS3Memory(BaseMemoryTest):
     """Test memory implementations."""
 
-    def is_memory_file_exists(self, memory: MemoryProviders) -> bool:
+    def is_backend_memory_exists(self, memory: MemoryProviders) -> bool:
         """Check if the memory file exists."""
         # Needed for type checking.
         assert isinstance(memory, S3Memory)

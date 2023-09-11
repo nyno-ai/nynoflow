@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials  # type: ignore
 
 from nynoflow.memory import GcpBlobMemory, MemoryProviders
 from tests.conftest import ConfigTests
-from tests.memory.base_file_memory_tests import BaseFileMemoryTest
+from tests.memory.base_memory_tests import BaseMemoryTest
 
 
 @pytest.fixture(scope="function")
@@ -27,10 +27,10 @@ def memory(config: ConfigTests) -> Generator[GcpBlobMemory, None, None]:
     )
 
 
-class TestGCPBlobMemory(BaseFileMemoryTest):
+class TestGCPBlobMemory(BaseMemoryTest):
     """Test memory implementations."""
 
-    def is_memory_file_exists(self, memory: MemoryProviders) -> bool:
+    def is_backend_memory_exists(self, memory: MemoryProviders) -> bool:
         """Check if the memory file exists."""
         # Needed for type checking.
         assert isinstance(memory, GcpBlobMemory)

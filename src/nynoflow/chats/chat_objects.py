@@ -5,7 +5,6 @@ from attrs import define, field
 from pydantic import BaseModel, Json
 
 
-# class ChatMessage(BaseModel):
 @define
 class ChatMessage:
     """This is the message object for the chat class.
@@ -22,7 +21,6 @@ class ChatMessage:
     role: Literal["user", "assistant", "system", "function"] = field()
     temporary: bool = field(default=False)
 
-    # _id: str = Field(default_factory=lambda: str(uuid4()))
     _id: str = field(factory=lambda: str(uuid4()))
 
     def __str__(self) -> str:

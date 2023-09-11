@@ -8,7 +8,7 @@ import pytest
 from nynoflow.chats.chat_objects import ChatMessage
 from nynoflow.memory import LocalFileMemory, MemoryProviders
 from tests.conftest import ConfigTests
-from tests.memory.base_file_memory_tests import BaseFileMemoryTest
+from tests.memory.base_memory_tests import BaseMemoryTest
 
 
 @pytest.fixture(scope="function")
@@ -20,10 +20,10 @@ def memory(config: ConfigTests) -> Generator[LocalFileMemory, None, None]:
     yield LocalFileMemory(chat_id=str(uuid4()), persist=False)
 
 
-class TestLocalFileMemory(BaseFileMemoryTest):
+class TestLocalFileMemory(BaseMemoryTest):
     """Test memory implementations."""
 
-    def is_memory_file_exists(self, memory: MemoryProviders) -> bool:
+    def is_backend_memory_exists(self, memory: MemoryProviders) -> bool:
         """Check if the memory file exists."""
         # Needed for type checking.
         assert isinstance(memory, LocalFileMemory)

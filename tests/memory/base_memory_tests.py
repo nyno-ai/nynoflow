@@ -14,11 +14,11 @@ from nynoflow.memory import MemoryProviders
 MemoryProviderType = TypeVar("MemoryProviderType", bound=MemoryProviders)
 
 
-class BaseFileMemoryTest(ABC):
+class BaseMemoryTest(ABC):
     """Generic test class for all file based memory providers."""
 
     @abstractmethod
-    def is_memory_file_exists(self, memory: MemoryProviderType) -> bool:
+    def is_backend_memory_exists(self, memory: MemoryProviderType) -> bool:
         """Check if the memory file exists."""
 
     def test_local_file_memory_basic_operations(
@@ -107,6 +107,9 @@ class BaseFileMemoryTest(ABC):
         memory.load_message_history()
 
         assert len(memory.message_history) == 3
+        assert memory.message_history[0].content == "Rome."
+        assert memory.message_history[1].content == "What is the captial of france?"
+        assert memory.message_history[2].content == "Paris."
 
     def test_cleanup(self, memory: MemoryProviderType) -> None:
         """Test persistence and cleanup."""
@@ -116,9 +119,9 @@ class BaseFileMemoryTest(ABC):
             content="What is the captial of italy?",
         )
         memory.insert_message(msg0)
-        assert self.is_memory_file_exists(memory)
+        assert self.is_backend_memory_exists(memory)
         assert len(memory.message_history) == 1
 
         # Save configuration to check if the file exists after cleanup
         memory.cleanup()
-        assert not self.is_memory_file_exists(memory)
+        assert not self.is_backend_memory_exists(memory)
