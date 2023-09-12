@@ -12,7 +12,7 @@ def render_chatgpt_response(response_content: str) -> ChatgptResponse:
     """
     chatgpt_response: ChatgptResponse = {
         "id": "chatcmpl-123",
-        "object": "chat.completion",
+        "object": "flow.completion",
         "created": 1677652288,
         "model": "gpt-3.5-turbo-0613",
         "choices": [

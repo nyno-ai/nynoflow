@@ -10,10 +10,10 @@ from nynoflow.chats._chatgpt._chatgpt_objects import (
     ChatgptRequestMessage,
     ChatgptResponse,
 )
-from nynoflow.chats.chat_objects import ChatMessageHistory
+from nynoflow.chats.chat_objects import ChatMessage
 from nynoflow.exceptions import ServiceUnavailableError
+from nynoflow.tokenizers import OpenAITokenizer
 from nynoflow.util import logger
-from nynoflow.utils.tokenizers.openai_tokenizer import ChatgptTiktokenTokenizer
 
 
 @define
@@ -37,7 +37,7 @@ class ChatgptProvider:
 
     provider_id: str = field(default="chatgpt")
     openai_chat_completion_client: openai.ChatCompletion = field(init=False)
-    tokenizer: ChatgptTiktokenTokenizer = field(init=False)
+    tokenizer: OpenAITokenizer = field(init=False)
     retries_on_service_error: int = field(default=0)
 
     # It is accesible using ChatgptProvider.token_limit using the getter function, and
@@ -49,7 +49,7 @@ class ChatgptProvider:
         """Configure the openai package with auth and configurations."""
         self.openai_chat_completion_client = openai.ChatCompletion()
 
-        self.tokenizer = ChatgptTiktokenTokenizer(self.model)
+        self.tokenizer = OpenAITokenizer(self.model)
 
         if self._token_limit is None:
             self.token_limit = self._model_token_limit()
@@ -115,44 +115,30 @@ class ChatgptProvider:
             f"Token limit not implemented for model {model_for_token_limit}. Please open an issue on GitHub."
         )
 
-    def _num_tokens(self, messages: ChatMessageHistory) -> int:
-        """Get the number of tokens in a message list for this provider and tokenizer.
-
-        Args:
-            messages: List of messages
-
-        Returns:
-            The number of tokens in the message list.
-        """
-        converted_message_history: ChatgptMessageHistory = (
-            self._convert_message_history(messages)
-        )
-        return self.tokenizer.token_count(converted_message_history)
-
     def _convert_message_history(
-        self, message_history: ChatMessageHistory
+        self, message_history: list[ChatMessage]
     ) -> ChatgptMessageHistory:
         """Convert the message history to a ChatGPT format message history.
 
         Args:
-            message_history (ChatMessageHistory): The message history to convert.
+            message_history (list[ChatMessage]): The message history to convert.
 
         Returns:
             ChatgptMessageHistory: The converted message history.
         """
         return [
-            ChatgptRequestMessage(role=msg["role"], content=msg["content"])
+            ChatgptRequestMessage(role=msg.role, content=msg.content)
             for msg in message_history
         ]
 
-    def completion(self, messages: ChatMessageHistory) -> str:
+    def completion(self, messages: list[ChatMessage]) -> str:
         """Get a completion from the OpenAI API.
 
         Raises:
             ServiceUnavailableError: If the OpenAI API is unavailable.
 
         Args:
-            messages (ChatMessageHistory): The message history to prompt with.
+            messages (list[ChatMessage]): The message history to prompt with.
 
         Returns:
             The completion.

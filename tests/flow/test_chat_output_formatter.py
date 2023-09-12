@@ -7,10 +7,10 @@ import pytest
 from pydantic import BaseModel, Field
 from pytest_mock import MockerFixture
 
-from nynoflow.chats import Chat
 from nynoflow.chats._chatgpt._chatgpt import ChatgptProvider
 from nynoflow.exceptions import InvalidResponseError
-from tests.chat.helpers import render_chatgpt_response
+from nynoflow.flow import Flow
+from tests.helpers import render_chatgpt_response
 
 
 class Gender(str, Enum):
@@ -68,7 +68,7 @@ class TestOutputParser:
             },
             "social_media": {"facebook": "john.doe", "twitter": "johndoe"},
         }
-        self.chat = Chat(
+        self.flow = Flow(
             providers=[
                 ChatgptProvider(
                     api_key="sk-123",
@@ -84,7 +84,7 @@ class TestOutputParser:
             "openai.ChatCompletion.create",
             return_value=render_chatgpt_response(json_data),
         )
-        output = self.chat.completion_with_output_formatter(
+        output = self.flow.completion_with_output_formatter(
             "doesnt matter we are mocking the response", output_format=Employee
         )
         assert output == Employee.model_validate(self.employee)
@@ -98,7 +98,7 @@ class TestOutputParser:
             return_value=render_chatgpt_response(json_data),
         )
         with pytest.raises(InvalidResponseError):
-            self.chat.completion_with_output_formatter(
+            self.flow.completion_with_output_formatter(
                 "doesnt matter", output_format=Employee
             )
 
@@ -113,7 +113,7 @@ class TestOutputParser:
         )
 
         with pytest.raises(InvalidResponseError):
-            self.chat.completion_with_output_formatter(
+            self.flow.completion_with_output_formatter(
                 "doesnt matter", output_format=Employee
             )
 
@@ -125,7 +125,7 @@ class TestOutputParser:
             "openai.ChatCompletion.create",
             return_value=render_chatgpt_response(json_data),
         )
-        output = self.chat.completion_with_output_formatter(
+        output = self.flow.completion_with_output_formatter(
             "doesnt matter", output_format=Employee
         )
         assert output == Employee.model_validate(self.employee)
@@ -140,7 +140,7 @@ class TestOutputParser:
             return_value=render_chatgpt_response(json_data),
         )
         with pytest.raises(InvalidResponseError):
-            self.chat.completion_with_output_formatter(
+            self.flow.completion_with_output_formatter(
                 "doesnt matter", output_format=Employee
             )
 
@@ -154,7 +154,7 @@ class TestOutputParser:
         )
 
         with pytest.raises(InvalidResponseError):
-            self.chat.completion_with_output_formatter(
+            self.flow.completion_with_output_formatter(
                 "doesnt matter", output_format=Employee
             )
 
@@ -172,7 +172,7 @@ class TestOutputParser:
             ],
         )
 
-        output = self.chat.completion_with_output_formatter(
+        output = self.flow.completion_with_output_formatter(
             "doesnt matter", output_format=Employee, auto_fix_retries=5
         )
 
@@ -192,6 +192,6 @@ class TestOutputParser:
         )
 
         with pytest.raises(InvalidResponseError):
-            self.chat.completion_with_output_formatter(
+            self.flow.completion_with_output_formatter(
                 "doesnt matter", output_format=Employee, auto_fix_retries=0
             )
