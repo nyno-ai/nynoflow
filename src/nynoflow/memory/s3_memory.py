@@ -2,6 +2,7 @@ import boto3
 from attrs import define, field
 from botocore.exceptions import ClientError
 from mypy_boto3_s3.client import S3Client
+from typeguard import typeguard_ignore
 
 from nynoflow.memory.base_file_memory import BaseFileMemory
 
@@ -12,13 +13,13 @@ class S3Memory(BaseFileMemory):
 
     bucket_name: str = field()
     key: str = field()
+    _s3_client: S3Client = field(init=False)
 
     @key.default
     def _default_key_factory(self) -> str:
         return f"nynoflow/{str(self.chat_id)}/memory.json"
 
-    _s3_client: S3Client = field(init=False)
-
+    @typeguard_ignore  # Ignore typeguard because we use the boto3-stubs in the return value
     @_s3_client.default
     def _s3_client_factory(self) -> S3Client:
         """Create an S3 client."""

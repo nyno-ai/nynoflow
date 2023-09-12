@@ -30,13 +30,13 @@ docstring-parser = "^0.15"
 jsonschema = "^4.19.0"
 cattrs = "^23.1.2"
 boto3 = "^1.28.44"
-boto3-stubs = {extras = ["s3"], version = "^1.28.44"}
 google-cloud-storage = "^2.10.0"
 types-google-cloud-ndb = "^2.2.0.0"
 redis = "^5.0.0"
 types-redis = "^4.6.0.5"
 sqlalchemy = "^2.0.20"
 sqlalchemy-stubs = "^0.4"
+boto3-stubs = {extras = ["s3"], version = "^1.28.44"}
 
 [tool.poetry.group.dev.dependencies]
 Pygments = "^2.16.1"
