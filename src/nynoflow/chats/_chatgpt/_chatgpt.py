@@ -43,34 +43,22 @@ class ChatgptProvider:
     # It is accesible using ChatgptProvider.token_limit using the getter function, and
     # setable using ChatgptProvider(token_limit=n) using the setter function, and by deafult
     # is set to the token limit of the model using the post attributes init function.
-    _token_limit: Union[int, None] = field(default=None)
+    token_limit: int = field()
+
+    @token_limit.default
+    def _token_limit_default(self) -> Union[int, None]:
+        """Get the token limit for the model.
+
+        Returns:
+            Union[int, None]: The token limit.
+        """
+        return self._model_token_limit()
 
     def __attrs_post_init__(self) -> None:
         """Configure the openai package with auth and configurations."""
         self.openai_chat_completion_client = openai.ChatCompletion()
 
         self.tokenizer = OpenAITokenizer(self.model)
-
-        if self._token_limit is None:
-            self.token_limit = self._model_token_limit()
-
-    @property
-    def token_limit(self) -> int:
-        """Get the token limit for the provider.
-
-        Returns:
-            int: The token limit.
-        """
-        return cast(int, self._token_limit)
-
-    @token_limit.setter
-    def token_limit(self, value: int) -> None:
-        """Set the token limit for the provider.
-
-        Args:
-            value (int): The token limit.
-        """
-        self._token_limit = value
 
     def _model_token_limit(
         self,
