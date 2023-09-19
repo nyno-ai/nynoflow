@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nynoflow"
-version = "0.2.0"
+version = "0.3.0"
 description = "NynoFlow"
 authors = ["nyno.ai <eitan@nyno.ai>"]
 license = "GPL-3.0"
